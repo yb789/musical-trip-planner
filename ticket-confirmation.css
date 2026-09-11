@@ -11,4 +11,12 @@
 .ticket-detection-status.ok{color:#245345}.ticket-detection-status.warn{color:#855f10}.ticket-detection-status.error{color:#9a2c19}
 .ticket-ref-input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff;margin-top:5px;font:inherit}
 .ticket-show-context{font-size:13px;padding:8px 10px;background:#f4efe6;border-radius:9px;margin:8px 0 12px}
+.ticket-match-result{margin-top:10px;padding:10px 11px;border-radius:10px;border:1px solid var(--line);font-size:12px;line-height:1.4;background:#faf8f4}
+.ticket-match-result.match{background:#edf7f2;border-color:#b7d7c8;color:#1f4b3f}
+.ticket-match-result.possible{background:#fff7e6;border-color:#e5c681;color:#73520b}
+.ticket-match-result.mismatch{background:#fff0ec;border-color:#e3b2a7;color:#8a2b1a}
+.ticket-match-result.unverified,.ticket-match-result.neutral{background:#f5f3ef;color:#5e5952}
+.ticket-match-summary{margin-top:3px}.ticket-match-checks{margin-top:6px;font-size:11px;line-height:1.55}
+.ticket-match-badge{margin-top:5px;padding:5px 7px;border-radius:7px;font-size:10px;font-weight:800;display:inline-block}
+.ticket-match-badge.match{background:#e3f3eb;color:#1f4b3f}.ticket-match-badge.possible{background:#fff1cb;color:#73520b}.ticket-match-badge.mismatch{background:#fde5df;color:#8a2b1a}.ticket-match-badge.unverified{background:#ece8e2;color:#5e5952}
 @media(max-width:560px){.ticket-confirmation-actions button{width:100%}}
