@@ -76,7 +76,7 @@ mustReplace(
     "Studio 54":"254 W 54th St, New York, NY 10019, USA",
     "Nederlander Theatre":"208 W 41st St, New York, NY 10036, USA",
     "Lena Horne Theatre":"256 W 47th St, New York, NY 10036, USA",
-    "Longacre Theatre":"220 W 48th St, New York, NY 10036, USA",
+    "Longacre Theatre":"220 W 48th St, New York, NY 10019, USA",
     "Gershwin Theatre":"222 W 51st St, New York, NY 10019, USA"
   }
 };
@@ -156,5 +156,10 @@ mustReplace(
   'PDF address column'
 );
 
+// Impact/SeatPlan ownership verification. Keep the exact tag supplied by Impact.
+if(!s.includes('impact-site-verification')){
+  s = s.replace('</head>', `<meta name='impact-site-verification' value='0a5183a9-64f8-440f-9453-61a053973f22'>\n</head>`);
+}
+
 fs.writeFileSync(file,s);
-console.log('Patched index.html with theater names and addresses in calendar and exports.');
+console.log('Patched index.html with theater names, addresses, and Impact website verification.');
