@@ -158,11 +158,11 @@ mustReplace(
 
 // Impact/SeatPlan ownership verification. Keep the exact tag supplied by Impact.
 if(!s.includes('impact-site-verification')){
-  s = s.replace('</head>', `<meta name='impact-site-verification' value='78f630d5-38a1-405a-ae8c-7c79dba75f93'>\n</head>`);
+  s = s.replace('</head>', `<meta name='impact-site-verification' value='f4f9554a-d2f5-4ef1-a0e1-f15f863e4d9e'>\n</head>`);
 }
 
 // Impact alternative content verification. Keep the exact text visible on the homepage.
-const impactVerificationText = 'Impact-Site-Verification: 78f630d5-38a1-405a-ae8c-7c79dba75f93';
+const impactVerificationText = 'Impact-Site-Verification: f4f9554a-d2f5-4ef1-a0e1-f15f863e4d9e';
 if(!s.includes(impactVerificationText)){
   s = s.replace('</body>', `<div style="font-size:10px;color:#6b665f;text-align:center;padding:4px 12px 14px">${impactVerificationText}</div>\n</body>`);
 }
