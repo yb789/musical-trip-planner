@@ -21,7 +21,9 @@ s=s.replace(calendarFn,`function calendarChoiceHtml(icon,c){
 }`);
 
 // Make exported rows enrich old saved choices too, and do not add a price column.
-const selectedRows=/function selectedRows\(\)\{[\s\S]*?\n\}/;
+// The source file keeps this function on one line, so match through the start of
+// exportExcel rather than requiring a newline immediately before the closing brace.
+const selectedRows=/function selectedRows\(\)\{[\s\S]*?\}(?=\nfunction exportExcel)/;
 if(!selectedRows.test(s)){
   console.error('selectedRows not found');
   process.exit(1);
