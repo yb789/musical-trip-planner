@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node patch-index.mjs && node patch-calendar-v2.mjs && node patch-clean-show-titles.mjs",
+  "buildCommand": "node patch-index.mjs && node patch-calendar-v2.mjs && node patch-price-simple.mjs",
   "rewrites": [
     {
       "source": "/",
