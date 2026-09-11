@@ -158,7 +158,7 @@ mustReplace(
 
 // Impact/SeatPlan ownership verification. Keep the exact tag supplied by Impact.
 if(!s.includes('impact-site-verification')){
-  s = s.replace('</head>', `<meta name='impact-site-verification' value='0a5183a9-64f8-440f-9453-61a053973f22'>\n</head>`);
+  s = s.replace('</head>', `<meta name='impact-site-verification' value='8da7d076-99e4-4478-a48d-12afafaaea5a'>\n</head>`);
 }
 
 fs.writeFileSync(file,s);
