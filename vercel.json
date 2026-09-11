@@ -1,6 +1,17 @@
 {
   "rewrites": [
     {
+      "source": "/api/schedule",
+      "has": [
+        {
+          "type": "query",
+          "key": "city",
+          "value": "broadway"
+        }
+      ],
+      "destination": "/api/broadway"
+    },
+    {
       "source": "/",
       "destination": "/index.html"
     }
