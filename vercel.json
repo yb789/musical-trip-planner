@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node patch-index.mjs && node patch-calendar-v2.mjs && node patch-price-simple.mjs && mkdir -p public && cp index.html public/index.html",
+  "buildCommand": "node patch-index.mjs && node patch-calendar-v2.mjs && node patch-price-simple.mjs && node patch-date-calendar.mjs && mkdir -p public && cp index.html public/index.html && cp date-calendar.js public/date-calendar.js && cp date-calendar.css public/date-calendar.css",
   "outputDirectory": "public",
   "rewrites": [
     {
