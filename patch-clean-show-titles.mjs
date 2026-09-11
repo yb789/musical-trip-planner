@@ -11,15 +11,20 @@ function replaceOrFail(search,replacement,label){
   s=s.replace(search,replacement);
 }
 
-// Add a display-name cleaner and make metadata lookup ignore price suffixes.
+// Add a strong display-name cleaner and make metadata lookup ignore any
+// Broadway.com price / savings suffix that leaked into a show title.
 replaceOrFail(
   "function days(){const out=[];let d=state.start,g=0;while(d<=state.end&&g++<31){out.push(d);d=addDays(d,1)}return out}function cityLabel(){return state.city==='london'?'London · West End':'New York · Broadway'}function cityShort(){return state.city==='london'?'London musicals':'Broadway musicals'}function current(){return state.data[state.city]}function choices(){return state.choices[state.city]}function showMeta(name){return current().shows.find(s=>s.name===name)||{name,venue:cityLabel()}}",
   `function days(){const out=[];let d=state.start,g=0;while(d<=state.end&&g++<31){out.push(d);d=addDays(d,1)}return out}function cityLabel(){return state.city==='london'?'London · West End':'New York · Broadway'}function cityShort(){return state.city==='london'?'London musicals':'Broadway musicals'}function current(){return state.data[state.city]}function choices(){return state.choices[state.city]}
 function cleanShowTitle(name){
   let x=String(name||'').replace(/\\s+/g,' ').trim();
-  x=x.replace(/\\s+from\\s+\\$[\\d,.]+(?:\\s+(?:save)(?:\\s+up\\s+to)?\\s+\\$[\\d,.]+)?\\s*$/i,'');
-  x=x.replace(/\\s+save(?:\\s+up\\s+to)?\\s+\\$[\\d,.]+\\s*$/i,'');
-  x=x.replace(/\\s+from\\s+\\$[\\d,.]+\\s*$/i,'');
+  // Broadway.com can append strings such as:
+  // "from $64.01 Save $77.75" or "from $79.36" to the title.
+  // Everything from that pricing suffix onward is intentionally removed.
+  const priceAt=x.search(/\\s+from\\s+(?:US)?\\$[\\d,.]+/i);
+  if(priceAt>0)x=x.slice(0,priceAt);
+  const saveAt=x.search(/\\s+save(?:\\s+up\\s+to)?\\s+(?:US)?\\$[\\d,.]+/i);
+  if(saveAt>0)x=x.slice(0,saveAt);
   return x.trim();
 }
 function showMeta(name){
@@ -29,7 +34,55 @@ function showMeta(name){
   'cleanShowTitle/showMeta'
 );
 
-// Clean names in the left-hand musical list while keeping raw names internally.
+// Force a fresh CDN cache key after the title-cleaning fix. The server ignores
+// this extra query parameter; it exists only to avoid an older cached response.
+replaceOrFail(
+  "fetch(`/api/schedule?city=${encodeURIComponent(state.city)}&start=${state.start}&end=${state.end}`)",
+  "fetch(`/api/schedule?city=${encodeURIComponent(state.city)}&start=${state.start}&end=${state.end}&titleclean=4`)",
+  'schedule cache buster'
+);
+
+// Sanitize the live response itself before any part of the interface sees it.
+// This protects the app even if an upstream source or stale API response still
+// contains pricing text in the title. Existing saved selections are migrated too.
+replaceOrFail(
+  "state.data[state.city]={shows:data.shows,schedule:data.schedule};const perf=Object.values(data.schedule).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);",
+  `const cleanedShowMap=new Map();
+    for(const show of data.shows){
+      const cleanName=cleanShowTitle(show.name);
+      if(!cleanName)continue;
+      const previous=cleanedShowMap.get(cleanName);
+      cleanedShowMap.set(cleanName,{...(previous||{}),...show,name:cleanName});
+    }
+    const cleanedShows=[...cleanedShowMap.values()];
+    const cleanedSchedule={};
+    for(const [date,entries] of Object.entries(data.schedule||{})){
+      const seen=new Set();
+      cleanedSchedule[date]=(Array.isArray(entries)?entries:[])
+        .map(([name,time])=>[cleanShowTitle(name),time])
+        .filter(([name,time])=>{
+          if(!name)return false;
+          const key=name.toLowerCase()+'|'+time;
+          if(seen.has(key))return false;
+          seen.add(key);
+          return true;
+        });
+    }
+    state.data[state.city]={shows:cleanedShows,schedule:cleanedSchedule};
+    // Migrate saved choices made before the price-cleaning fix.
+    for(const cityKey of ['london','broadway']){
+      for(const day of Object.values(state.choices[cityKey]||{})){
+        for(const session of ['matinee','evening']){
+          if(day?.[session]?.name)day[session].name=cleanShowTitle(day[session].name);
+        }
+      }
+    }
+    save();
+    const perf=Object.values(cleanedSchedule).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);`,
+  'sanitize live API response'
+);
+
+// Clean names in the left-hand musical list.
 replaceOrFail(
   "<label for=\"${id}\"><b>${esc(s.name)}</b><div class=\"venue-mini\">${esc(s.venue||'')}</div></label>",
   "<label for=\"${id}\"><b>${esc(cleanShowTitle(s.name))}</b><div class=\"venue-mini\">${esc(s.venue||'')}</div></label>",
@@ -70,8 +123,7 @@ replaceOrFail(
   'calendar clean title'
 );
 
-// Clean musical names in Excel/PDF exports too. Price remains absent from all
-// calendar/export fields.
+// Clean musical names in Excel/PDF exports too.
 replaceOrFail(
   "musical:c.name,",
   "musical:cleanShowTitle(c.name),",
@@ -79,4 +131,4 @@ replaceOrFail(
 );
 
 fs.writeFileSync(file,s);
-console.log('Removed ticket-price suffixes from musical names throughout the planner.');
+console.log('Sanitized live, cached and saved musical titles; prices removed everywhere.');
