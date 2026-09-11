@@ -16,8 +16,17 @@ function parseISO(s){
   return Number.isNaN(d.getTime())?null:d;
 }
 function iso(d){return d.toISOString().slice(0,10)}
+function cleanShowTitle(s){
+  let x=String(s||"").replace(/\s+/g," ").trim();
+  // Broadway.com sometimes appends offer text to a title, e.g.
+  // "Maybe Happy Ending from $61.03 Save $84.00".
+  // Strip that pricing/discount metadata before the app receives the title.
+  x=x.replace(/\s+from\s+\$[\d,.]+.*$/i,"");
+  x=x.replace(/\s+save(?:\s+up\s+to)?\s+\$[\d,.]+.*$/i,"");
+  return x.trim();
+}
 function normalize(s){
-  return String(s||"").toLowerCase().normalize("NFKD")
+  return cleanShowTitle(s).toLowerCase().normalize("NFKD")
     .replace(/[\u0300-\u036f]/g,"")
     .replace(/&/g,"and")
     .replace(/\b(the|a|an|new|musical)\b/g," ")
@@ -54,7 +63,8 @@ function extractShowLinks(html,base){
     if(!href || href.includes('/shows/tickets/') || href.includes('/event/') || href.includes('/schedule/')) return;
     href=absolute(base,href).split('?')[0];
     if(!/^https:\/\/www\.broadway\.com\/shows\/[^/]+\/?$/.test(href)) return;
-    const text=$(a).text().replace(/\s+/g,' ').trim();
+    const rawText=$(a).text().replace(/\s+/g,' ').trim();
+    const text=cleanShowTitle(rawText);
     if(!text || text.length>120 || /learn more|buy tickets|reviews?|schedule|theater/i.test(text)) return;
     const prev=byHref.get(href);
     if(!prev || text.length>prev.name.length) byHref.set(href,{name:text,href});
@@ -90,7 +100,8 @@ function parseSchedule(html,title,start,end){
   }
 
   let venue='Broadway, New York';
-  const titleRe=regexEscape(title);
+  const cleanTitle=cleanShowTitle(title);
+  const titleRe=regexEscape(cleanTitle);
   const vm=text.match(new RegExp(`${titleRe}\\s+([A-Z][A-Za-z0-9'&.\\- ]{2,80}(?:Theatre|Theater))\\s+New York, NY`,'i'));
   if(vm) venue=vm[1].trim();
   if(venue==='Broadway, New York'){
@@ -132,22 +143,24 @@ async function scrape(start,end){
   const pages=await mapLimit(candidates,8,async show=>{
     const scheduleUrl=new URL('schedule/',show.href).href;
     const html=await fetchText(scheduleUrl);
-    return {...show,scheduleUrl,...parseSchedule(html,show.name,start,end)};
+    const cleanName=cleanShowTitle(show.name);
+    return {...show,name:cleanName,scheduleUrl,...parseSchedule(html,cleanName,start,end)};
   });
 
   for(const p of pages){
     if(!p||p.error) continue;
+    const cleanName=cleanShowTitle(p.name);
     let hasAny=false;
     for(const [date,times] of Object.entries(p.schedule||{})){
       if(!schedule[date]) continue;
       for(const time of times){
-        schedule[date].push([p.name,time]);
+        schedule[date].push([cleanName,time]);
         hasAny=true;
       }
     }
     if(hasAny){
       shows.push({
-        name:p.name,
+        name:cleanName,
         venue:p.venue||'Broadway, New York',
         ticketUrl:p.href,
         infoUrl:p.href
@@ -157,7 +170,7 @@ async function scrape(start,end){
 
   for(const d of dates){
     const seen=new Set();
-    schedule[d]=schedule[d].filter(([name,time])=>{
+    schedule[d]=schedule[d].map(([name,time])=>[cleanShowTitle(name),time]).filter(([name,time])=>{
       const k=`${normalize(name)}|${time}`;
       if(seen.has(k)) return false;
       seen.add(k);
