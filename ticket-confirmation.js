@@ -5,6 +5,7 @@
   let pdfJsPromise=null;
   let ticketTarget=null;
   let selectedPdfName='';
+  let selectedVerification=null;
 
   const overlay=document.createElement('div');
   overlay.id='ticketConfirmationOverlay';
@@ -13,12 +14,16 @@
     <div class="modal">
       <h2>Ticket confirmation</h2>
       <div id="ticketShowContext" class="ticket-show-context"></div>
-      <div class="ticket-modal-note"><b>Private by design:</b> the PDF is read on this device only. The PDF itself is not uploaded to or stored by this website. Only the confirmation/reference number you approve and the PDF filename are saved with this itinerary in your browser.</div>
+      <div class="ticket-modal-note"><b>Private by design:</b> the PDF is read on this device only. The PDF itself is not uploaded to or stored by this website. Only the confirmation/reference number you approve, the PDF filename, and the match result are saved with this itinerary in your browser.</div>
       <div class="field">
         <label for="ticketPdfInput">Confirmation PDF</label>
         <input id="ticketPdfInput" class="ticket-file-input" type="file" accept="application/pdf,.pdf">
       </div>
-      <div id="ticketDetectionStatus" class="ticket-detection-status">Choose the ticket confirmation PDF. The planner will try to find the booking, confirmation, order, or reference number.</div>
+      <div id="ticketDetectionStatus" class="ticket-detection-status">Choose the ticket confirmation PDF. The planner will try to find the booking/reference number and check whether the PDF appears to belong to this selected performance.</div>
+      <div id="ticketMatchResult" class="ticket-match-result neutral">
+        <b>Performance check</b>
+        <div class="ticket-match-summary">Not checked yet.</div>
+      </div>
       <div class="field" style="margin-top:10px">
         <label for="ticketReferenceInput">Confirmation / booking reference</label>
         <input id="ticketReferenceInput" class="ticket-ref-input" type="text" autocomplete="off" placeholder="e.g. ABC123456">
@@ -45,6 +50,154 @@
     const el=$('ticketDetectionStatus');
     el.textContent=message;
     el.className='ticket-detection-status'+(type?' '+type:'');
+  }
+
+  function normalizeText(value){
+    return String(value||'')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g,'')
+      .toLowerCase()
+      .replace(/&/g,' and ')
+      .replace(/[^a-z0-9]+/g,' ')
+      .replace(/\s+/g,' ')
+      .trim();
+  }
+
+  function titleTokens(value,{venue=false}={}){
+    const stop=new Set(venue
+      ? ['the','a','an','theatre','theater','venue','at','of','and','new','york','london']
+      : ['the','a','an','musical','show','on','at','of','and','new','broadway','west','end']);
+    return normalizeText(value).split(' ').filter(t=>t&&!stop.has(t));
+  }
+
+  function tokenMatch(text,value,options={}){
+    const normText=` ${normalizeText(text)} `;
+    const tokens=titleTokens(value,options);
+    if(!tokens.length)return false;
+    if(tokens.length===1){
+      const token=tokens[0];
+      return token.length<=3?normText.includes(` ${token} `):normText.includes(token);
+    }
+    const matched=tokens.filter(token=>normText.includes(` ${token} `)||normText.includes(token)).length;
+    return matched/tokens.length>=0.72;
+  }
+
+  function selectedVenue(choice){
+    try{
+      if(typeof resolveVenueAndAddress==='function'){
+        const loc=resolveVenueAndAddress(choice);
+        if(loc?.venue)return loc.venue;
+      }
+    }catch{}
+    const meta=typeof showMeta==='function'?showMeta(choice.name):{};
+    return choice.venue||meta?.venue||'';
+  }
+
+  function dateMatches(text,date){
+    if(!date)return false;
+    const d=parseISO(date),day=d.getDate(),month=d.getMonth()+1,year=d.getFullYear();
+    const dd=String(day).padStart(2,'0'),mm=String(month).padStart(2,'0');
+    const raw=String(text||'').toLowerCase().replace(/\s+/g,' ');
+    const numeric=[
+      `${year}-${mm}-${dd}`,`${year}/${mm}/${dd}`,
+      `${dd}/${mm}/${year}`,`${day}/${month}/${year}`,
+      `${mm}/${dd}/${year}`,`${month}/${day}/${year}`,
+      `${dd}-${mm}-${year}`,`${mm}-${dd}-${year}`,
+      `${dd}.${mm}.${year}`,`${mm}.${dd}.${year}`
+    ];
+    if(numeric.some(v=>raw.includes(v)))return true;
+    const longMonth=d.toLocaleDateString('en-GB',{month:'long'}).toLowerCase();
+    const shortMonth=d.toLocaleDateString('en-GB',{month:'short'}).replace('.','').toLowerCase();
+    const wordText=normalizeText(text);
+    const variants=[
+      `${day} ${longMonth} ${year}`,`${longMonth} ${day} ${year}`,
+      `${day} ${shortMonth} ${year}`,`${shortMonth} ${day} ${year}`,
+      `${day} ${longMonth}`,`${longMonth} ${day}`,
+      `${day} ${shortMonth}`,`${shortMonth} ${day}`
+    ].map(normalizeText);
+    return variants.some(v=>v&&wordText.includes(v));
+  }
+
+  function timeMatches(text,time){
+    if(!time||!/^\d{2}:\d{2}$/.test(time))return false;
+    const [hh,mm]=time.split(':').map(Number);
+    const raw=String(text||'').toLowerCase().replace(/\s+/g,' ');
+    const h12=hh%12||12,ampm=hh>=12?'pm':'am';
+    const min=String(mm).padStart(2,'0');
+    const variants=[
+      `${String(hh).padStart(2,'0')}:${min}`,
+      `${hh}:${min}`,
+      `${h12}:${min} ${ampm}`,
+      `${h12}:${min}${ampm}`,
+      `${h12}.${min} ${ampm}`,
+      `${h12}.${min}${ampm}`,
+      `${h12}:${min} ${ampm[0]}.m.`,
+      ...(mm===0?[`${h12} ${ampm}`,`${h12}${ampm}`]:[])
+    ];
+    return variants.some(v=>raw.includes(v));
+  }
+
+  function verificationLabel(status){
+    if(status==='match')return 'Match';
+    if(status==='possible')return 'Possible match';
+    if(status==='mismatch')return 'Does not appear to match';
+    return 'Unable to verify';
+  }
+
+  function verificationShort(status){
+    if(status==='match')return 'PDF matches selected performance';
+    if(status==='possible')return 'Possible PDF match — review';
+    if(status==='mismatch')return 'PDF may not match selected performance';
+    return 'PDF match not verified';
+  }
+
+  function verifyPerformance(text){
+    const choice=currentChoice();
+    if(!choice||!ticketTarget)return {status:'unverified',checks:{},message:'No selected performance was available to compare.'};
+    const cleanName=typeof cleanShowTitle==='function'?cleanShowTitle(choice.name):choice.name;
+    const venue=selectedVenue(choice);
+    const checks={
+      show:tokenMatch(text,cleanName),
+      date:dateMatches(text,ticketTarget.date),
+      time:timeMatches(text,choice.time),
+      venue:venue?tokenMatch(text,venue,{venue:true}):false
+    };
+    const matched=Object.values(checks).filter(Boolean).length;
+    const readable=normalizeText(text).length>30;
+    let status='unverified';
+    if(checks.show&&checks.date&&(checks.time||checks.venue))status='match';
+    else if((checks.show&&checks.date)||(checks.show&&checks.time&&checks.venue)||(checks.date&&checks.time&&checks.venue))status='possible';
+    else if(readable&&matched<=1)status='mismatch';
+    else if(readable&&matched>=2)status='possible';
+
+    const details=[];
+    details.push(`${checks.show?'✓':'—'} Show: ${cleanName}`);
+    details.push(`${checks.date?'✓':'—'} Date: ${fmt(ticketTarget.date,{day:'numeric',month:'short',year:'numeric'})}`);
+    details.push(`${checks.time?'✓':'—'} Time: ${choice.time}`);
+    if(venue)details.push(`${checks.venue?'✓':'—'} Venue: ${venue}`);
+
+    const message=status==='match'
+      ? 'The PDF strongly matches the selected performance.'
+      : status==='possible'
+        ? 'Some performance details match, but not enough were found for a strong match. Please review the PDF before saving.'
+        : status==='mismatch'
+          ? 'The readable PDF does not contain enough matching performance details. It may belong to a different ticket.'
+          : 'There was not enough readable information to verify this PDF against the selected performance.';
+
+    return {status,checks,details,message,checkedAt:new Date().toISOString()};
+  }
+
+  function renderVerification(verification){
+    const box=$('ticketMatchResult');
+    if(!verification){
+      box.className='ticket-match-result neutral';
+      box.innerHTML='<b>Performance check</b><div class="ticket-match-summary">Not checked yet.</div>';
+      return;
+    }
+    const status=verification.status||'unverified';
+    const icon=status==='match'?'✓':status==='possible'?'◐':status==='mismatch'?'⚠':'?';
+    box.className=`ticket-match-result ${status}`;
+    box.innerHTML=`<b>${icon} ${esc(verificationLabel(status))}</b><div class="ticket-match-summary">${esc(verification.message||verificationShort(status))}</div>${Array.isArray(verification.details)?`<div class="ticket-match-checks">${verification.details.map(x=>`<div>${esc(x)}</div>`).join('')}</div>`:''}`;
   }
 
   async function getPdfJs(){
@@ -119,21 +272,27 @@
       return;
     }
     selectedPdfName=file.name;
-    showDetection('Reading the PDF locally on this device…');
+    selectedVerification=null;
+    renderVerification(null);
+    showDetection('Reading the PDF locally and checking it against the selected performance…');
     try{
       const text=await extractPdfText(file);
       const reference=detectReference(text);
+      selectedVerification=text.trim()?verifyPerformance(text):{status:'unverified',checks:{},details:[],message:'This PDF contains no readable text, so the selected performance could not be verified.',checkedAt:new Date().toISOString()};
+      renderVerification(selectedVerification);
       if(reference){
         $('ticketReferenceInput').value=reference;
-        showDetection(`Confirmation/reference found: ${reference}. Check it against the PDF, edit it if necessary, then press Save confirmation.`,'ok');
+        showDetection(`Confirmation/reference found: ${reference}. Review both the reference and the performance check below, then save if correct.`,'ok');
       }else if(text.trim()){
-        showDetection('I could read the PDF, but I could not confidently identify the confirmation number. Please type or paste it in the field below.','warn');
+        showDetection('The PDF was read and checked against the selected performance, but the confirmation number could not be identified confidently. Please type or paste it below.','warn');
       }else{
-        showDetection('This appears to be an image-only/scanned PDF, so no readable text was found. Please type the confirmation number manually.','warn');
+        showDetection('This appears to be an image-only/scanned PDF. The performance and confirmation number could not be verified automatically. Please check the PDF and enter the reference manually.','warn');
       }
     }catch(error){
       console.error('Ticket PDF reading failed:',error);
-      showDetection('The PDF could not be read automatically. You can still type the confirmation number manually below.','warn');
+      selectedVerification={status:'unverified',checks:{},details:[],message:'The PDF could not be read automatically, so its performance details were not verified.',checkedAt:new Date().toISOString()};
+      renderVerification(selectedVerification);
+      showDetection('The PDF could not be read automatically. You can still type the confirmation number manually below, but the ticket will be marked as unverified.','warn');
     }
   }
 
@@ -142,15 +301,18 @@
     if(!choice)return;
     ticketTarget={city:state.city,date,session};
     selectedPdfName=choice.confirmationFileName||'';
-    $('ticketShowContext').innerHTML=`<b>${esc(typeof cleanShowTitle==='function'?cleanShowTitle(choice.name):choice.name)}</b> · ${esc(choice.time)}<br>${esc(fmt(date))}`;
+    selectedVerification=choice.confirmationVerification||null;
+    const venue=selectedVenue(choice);
+    $('ticketShowContext').innerHTML=`<b>${esc(typeof cleanShowTitle==='function'?cleanShowTitle(choice.name):choice.name)}</b> · ${esc(choice.time)}<br>${esc(fmt(date))}${venue?`<br>${esc(venue)}`:''}`;
     $('ticketPdfInput').value='';
     $('ticketReferenceInput').value=choice.bookingReference||'';
     $('ticketReferenceError').textContent='';
     $('ticketRemoveBtn').classList.toggle('hidden',!choice.bookingReference);
+    renderVerification(selectedVerification);
     if(choice.bookingReference){
       showDetection(`Saved confirmation: ${choice.bookingReference}${choice.confirmationFileName?` · processed from ${choice.confirmationFileName}`:''}. You may replace the PDF or edit the reference.`,'ok');
     }else{
-      showDetection('Choose the ticket confirmation PDF. The planner will try to find the booking, confirmation, order, or reference number.');
+      showDetection('Choose the ticket confirmation PDF. The planner will find the booking/reference number and compare the show, date, time, and venue with this selected performance.');
     }
     $('ticketConfirmationOverlay').classList.remove('hidden');
   }
@@ -159,6 +321,7 @@
     $('ticketConfirmationOverlay').classList.add('hidden');
     ticketTarget=null;
     selectedPdfName='';
+    selectedVerification=null;
   }
 
   function saveTicketReference(){
@@ -171,6 +334,9 @@
     }
     choice.bookingReference=reference;
     choice.confirmationFileName=selectedPdfName||choice.confirmationFileName||'';
+    choice.confirmationVerification=selectedVerification||choice.confirmationVerification||{
+      status:'unverified',checks:{},details:[],message:'The booking reference was saved manually without a PDF performance check.',checkedAt:new Date().toISOString()
+    };
     choice.confirmationAddedAt=new Date().toISOString();
     save();
     closeTicketModal();
@@ -183,6 +349,7 @@
     if(choice){
       delete choice.bookingReference;
       delete choice.confirmationFileName;
+      delete choice.confirmationVerification;
       delete choice.confirmationAddedAt;
       save();
     }
@@ -191,13 +358,20 @@
     renderCalendar();
   }
 
+  function verificationBadge(verification){
+    if(!verification)return'';
+    const status=verification.status||'unverified';
+    const icon=status==='match'?'✓':status==='possible'?'◐':status==='mismatch'?'⚠':'?';
+    return `<div class="ticket-match-badge ${status}">${icon} ${esc(verificationShort(status))}</div>`;
+  }
+
   function controlHtml(choice,date,session){
     if(!choice)return'';
     const ref=choice.bookingReference||'';
     if(ref){
-      return `<div class="ticket-confirmation-box"><b>🎟 Ticket confirmation</b><div class="ticket-confirmation-ref">Booking reference: ${esc(ref)}</div>${choice.confirmationFileName?`<div class="ticket-confirmation-file">PDF processed locally: ${esc(choice.confirmationFileName)}</div>`:''}<div class="ticket-confirmation-actions"><button type="button" class="ticket-confirmation-edit" data-date="${date}" data-session="${session}">Edit / replace PDF</button><button type="button" class="ticket-confirmation-remove danger" data-date="${date}" data-session="${session}">Remove</button></div></div>`;
+      return `<div class="ticket-confirmation-box"><b>🎟 Ticket confirmation</b><div class="ticket-confirmation-ref">Booking reference: ${esc(ref)}</div>${verificationBadge(choice.confirmationVerification)}${choice.confirmationFileName?`<div class="ticket-confirmation-file">PDF processed locally: ${esc(choice.confirmationFileName)}</div>`:''}<div class="ticket-confirmation-actions"><button type="button" class="ticket-confirmation-edit" data-date="${date}" data-session="${session}">Review / replace PDF</button><button type="button" class="ticket-confirmation-remove danger" data-date="${date}" data-session="${session}">Remove</button></div></div>`;
     }
-    return `<div class="ticket-confirmation-box"><b>🎟 Bought the ticket?</b><div>Add the confirmation PDF to detect the booking/reference number.</div><div class="ticket-confirmation-actions"><button type="button" class="ticket-confirmation-add" data-date="${date}" data-session="${session}">Add confirmation PDF</button></div></div>`;
+    return `<div class="ticket-confirmation-box"><b>🎟 Bought the ticket?</b><div>Add the confirmation PDF to detect the booking/reference number and verify the show, date, time, and venue.</div><div class="ticket-confirmation-actions"><button type="button" class="ticket-confirmation-add" data-date="${date}" data-session="${session}">Add & verify confirmation PDF</button></div></div>`;
   }
 
   function bindConfirmationButtons(){
@@ -210,6 +384,7 @@
         if(choice){
           delete choice.bookingReference;
           delete choice.confirmationFileName;
+          delete choice.confirmationVerification;
           delete choice.confirmationAddedAt;
           save();renderDay();renderCalendar();
         }
@@ -234,7 +409,9 @@
     calendarChoiceHtml=function(icon,choice){
       let html=previousCalendarChoiceHtml(icon,choice);
       if(choice?.bookingReference){
-        const extra=`<div class="calendar-confirmation">🎟 Confirmation: ${esc(choice.bookingReference)}</div>`;
+        const status=choice.confirmationVerification?.status||'unverified';
+        const verifyText=status==='match'?' · ✓ matched':status==='mismatch'?' · ⚠ check ticket':status==='possible'?' · ◐ possible match':'';
+        const extra=`<div class="calendar-confirmation">🎟 Confirmation: ${esc(choice.bookingReference)}${esc(verifyText)}</div>`;
         html=html.replace(/<\/div>\s*$/,extra+'</div>');
       }
       return html;
@@ -259,15 +436,16 @@
   selectedRows=function(){
     return previousSelectedRows().map(row=>{
       const choice=choiceForExportRow(row);
-      return {...row,bookingReference:choice?.bookingReference||''};
+      const verification=choice?.confirmationVerification;
+      return {...row,bookingReference:choice?.bookingReference||'',ticketMatch:verification?verificationLabel(verification.status):''};
     });
   };
 
   exportExcel=function(){
     const rows=selectedRows();
     if(!rows.length)return alert('There are no selected performances to export.');
-    const headers=['City','Date','Session','Start Time','Musical','Theater / Venue','Address','Booking Confirmation','Ticket Website','Theater / Venue Website'];
-    const keys=['city','date','session','time','musical','venue','address','bookingReference','ticket','theatre'];
+    const headers=['City','Date','Session','Start Time','Musical','Theater / Venue','Address','Booking Confirmation','Ticket PDF Check','Ticket Website','Theater / Venue Website'];
+    const keys=['city','date','session','time','musical','venue','address','bookingReference','ticketMatch','ticket','theatre'];
     const e=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     let xml=`<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Schedule"><Table>`;
     xml+='<Row>'+headers.map(h=>`<Cell><Data ss:Type="String">${e(h)}</Data></Cell>`).join('')+'</Row>';
@@ -281,7 +459,7 @@
     const rows=selectedRows();
     if(!rows.length)return alert('There are no selected performances to export.');
     const rangeText=typeof tripRangeText==='function'?tripRangeText():`${fmt(state.start)} – ${fmt(state.end)}`;
-    $('printReport').innerHTML=`<h1>Musical Trip Schedule</h1><p><b>${esc(cityLabel())}</b><br>${esc(rangeText)}</p><table><thead><tr><th>Date</th><th>Session</th><th>Time</th><th>Musical</th><th>Theater / Venue</th><th>Address</th><th>Booking Confirmation</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.date)}</td><td>${esc(row.session)}</td><td>${esc(row.time)}</td><td>${esc(row.musical)}</td><td>${esc(row.venue||'')}</td><td>${esc(row.address||'')}</td><td>${esc(row.bookingReference||'')}</td></tr>`).join('')}</tbody></table><p style="font-size:9px">Ticket confirmation PDFs are processed locally in the browser and are not stored by this planner. Ticket purchases are handled solely by third-party providers. Verify all performance and purchase details before buying or travelling.</p>`;
+    $('printReport').innerHTML=`<h1>Musical Trip Schedule</h1><p><b>${esc(cityLabel())}</b><br>${esc(rangeText)}</p><table><thead><tr><th>Date</th><th>Session</th><th>Time</th><th>Musical</th><th>Theater / Venue</th><th>Address</th><th>Booking Confirmation</th><th>Ticket PDF Check</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.date)}</td><td>${esc(row.session)}</td><td>${esc(row.time)}</td><td>${esc(row.musical)}</td><td>${esc(row.venue||'')}</td><td>${esc(row.address||'')}</td><td>${esc(row.bookingReference||'')}</td><td>${esc(row.ticketMatch||'')}</td></tr>`).join('')}</tbody></table><p style="font-size:9px">Ticket confirmation PDFs are processed locally in the browser and are not stored by this planner. The PDF match check is an automated aid and may be incomplete; users should verify the show, date, time, venue, and booking reference against the original ticket confirmation. Ticket purchases are handled solely by third-party providers.</p>`;
     window.print();
   };
 
