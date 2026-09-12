@@ -34,7 +34,12 @@ async function fetchText(url){
   }finally{clearTimeout(timer)}
 }
 
-function bestContainer($,el){let node=$(el);for(let i=0;i<8&&node.length;i++){const t=node.text();if(/Performances/i.test(t)&&/Playing at:/i.test(t))return node;node=node.parent()}return $(el).parent()}
+// Each London Box Office listing is wrapped in an element carrying data-name; prefer that.
+// Fallback walks up looking for the capitalised "Performances" label only: a lowercase
+// "performances" inside a show blurb used to stop the walk one level too early.
+function bestContainer($,el){const li=$(el).closest("[data-name]");if(li.length)return li;let node=$(el);for(let i=0;i<8&&node.length;i++){const t=node.text();if(/Performances/.test(t)&&/Playing at:/i.test(t))return node;node=node.parent()}return $(el).parent()}
+function matchKey(s){return normalizeTitle(s).replace(/themusical$/,"").replace(/musical$/,"")}
+function looksNonMusical(title,cats){return cats.includes("o")||/ballet|opera|dance|tango|flamenco|circus|cirque|in concert|live!?$|comedy/i.test(title)}
 
 async function scrapeLondonDay(date){
   const [y,m,d]=date.split("-");
@@ -68,13 +73,15 @@ async function scrapeLondonDay(date){
     const block=container.text().replace(/\s+/g," ").trim();
     if(!/Performances/i.test(block))return;
     const norm=normalizeTitle(title);
+    const key=matchKey(title);
     let musical=musicalNames.get(norm);
-    if(!musical){for(const [k,v] of musicalNames){if(k===norm||(k.length>5&&norm.length>5&&(k.includes(norm)||norm.includes(k)))){musical=v;break}}}
-    // Safety net: London Box Office tags each listing with categories; "m" = musical.
+    if(!musical){for(const [k,v] of musicalNames){const kk=matchKey(v.name);if(k===norm||kk===key||(kk.length>5&&key.length>5&&(kk.includes(key)||key.includes(kk)))){musical=v;break}}}
+    // Safety net: London Box Office tags each listing with categories; "m" covers musicals
+    // but also opera/ballet/dance, so filter those out by category and title.
     if(!musical){
       const item=container.is("[data-categories]")?container:container.closest("[data-categories]");
-      const cats=String(item.attr("data-categories")||"").split(/\s+/);
-      if(cats.includes("m"))musical={name:title,href:""};
+      const cats=String(item.attr("data-categories")||"").split(/\s+/).filter(Boolean);
+      if(cats.includes("m")&&!looksNonMusical(title,cats))musical={name:title,href:""};
     }
     if(!musical)return;
     const times=extractTimes(block);
