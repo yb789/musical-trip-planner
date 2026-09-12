@@ -20,7 +20,7 @@ function iso(d){return d.toISOString().slice(0,10)}
 function addDays(d,n){const x=new Date(d);x.setUTCDate(x.getUTCDate()+n);return x}
 function rangeDates(start,end){const out=[];let d=new Date(start);while(d<=end&&out.length<32){out.push(iso(d));d=addDays(d,1)}return out}
 function normalizeTitle(s){return String(s||"").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/&/g,"and").replace(/^the\s+/,"").replace(/[^a-z0-9]+/g,"").trim()}
-function absolute(base,href){if(!href)return"";try{return new URL(href,base).href}catch{return""}}
+function absolute(base,href){if(!href)return"";try{const u=new URL(href,base);return /^https?:$/.test(u.protocol)?u.href:""}catch{return""}}
 function normalizeTime(raw){const m=String(raw||"").trim().match(/(\d{1,2}):(\d{2})\s*(am|pm)/i);if(!m)return null;let h=Number(m[1]),min=m[2],ap=m[3].toLowerCase();if(ap==="pm"&&h!==12)h+=12;if(ap==="am"&&h===12)h=0;return `${String(h).padStart(2,"0")}:${min}`}
 function extractTimes(text){const matches=String(text||"").match(/\b\d{1,2}:\d{2}\s*(?:AM|PM)\b/gi)||[];return [...new Set(matches.map(normalizeTime).filter(Boolean))]}
 
