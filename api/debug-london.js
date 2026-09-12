@@ -71,21 +71,23 @@ export default async function handler(req,res){
     if(!hasPerformances)verdict="dropped: container has no 'Performances' text";
     else if(!musical)verdict="dropped: title not matched to any londontheatre.co.uk musical";
     else if(!timesFound.length)verdict="dropped: no h:mm am/pm times in container";
-    let perfHtml=null;
+    let perfHtml=null, perfText=null, containerHtmlLength=null, perfIndexInHtml=null;
     if(title.toLowerCase().includes(needle)){
       const raw=String(container.html()||"");
-      const pi=raw.indexOf("Performances");
-      perfHtml=raw.slice(Math.max(0,pi-200),pi+2500).replace(/\s+/g," ").replace(/https?:\/\/[^\s"']+/g,"URL");
+      containerHtmlLength=raw.length;
+      const pi=raw.search(/Performances/i);
+      perfIndexInHtml=pi;
+      perfHtml=(pi>=0?raw.slice(pi-100,pi+3000):raw.slice(-3000)).replace(/\s+/g," ").replace(/https?:\/\/[^\s"']+/g,"URL");
+      const ti=block.search(/Performances/i);
+      perfText=ti>=0?block.slice(ti,ti+400):null;
     }
     const item=container.is("[data-categories]")?container:container.closest("[data-categories]");
     const cats=String(item.attr("data-categories")||"");
-    headings.push({tag:h.tagName,title,norm,matched:musical,cats,hasPerformances,hasPlayingAt,times:timesFound,verdict,blockPreview:block.slice(0,220),perfHtml});
+    headings.push({tag:h.tagName,title,norm,matched:musical,cats,hasPerformances,hasPlayingAt,times:timesFound,verdict,blockPreview:block.slice(0,220),containerHtmlLength,perfIndexInHtml,perfText,perfHtml});
   });
 
   const needleInTimesHtml=(times.text.toLowerCase().match(new RegExp(needle,"g"))||[]).length;
   const needleInMusicalHtml=(musical.text.toLowerCase().match(new RegExp(needle,"g"))||[]).length;
-  const idx=times.text.toLowerCase().indexOf(needle);
-  const rawContext=idx>=0?times.text.slice(Math.max(0,idx-600),idx+1200):null;
 
   res.status(200);
   res.end(JSON.stringify({
@@ -100,7 +102,6 @@ export default async function handler(req,res){
     headingsCount:headings.length,
     headingsMatchingNeedle:headings.filter(h=>h.title.toLowerCase().includes(needle)),
     keptSummary:headings.filter(h=>h.verdict==="kept").map(h=>({title:h.title,times:h.times})),
-    droppedSummary:headings.filter(h=>h.verdict!=="kept"&&h.hasPerformances).map(h=>({title:h.title,verdict:h.verdict})),
-    rawContextAroundNeedleInTimesHtml:rawContext
+    droppedSummary:headings.filter(h=>h.verdict!=="kept"&&h.hasPerformances).map(h=>({title:h.title,verdict:h.verdict}))
   },null,2));
 }
