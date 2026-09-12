@@ -47,7 +47,8 @@ async function scrapeLondonDay(date){
   // Real show links on londontheatre.co.uk look like /show/46308-billy-elliot-the-musical.
   // Select by href, not by link text: a text filter on the word "musical" used to discard
   // every title containing it (Billy Elliot the Musical, Matilda The Musical, SIX the Musical...).
-  $m("a[href*='/show/']").each((_,a)=>{
+  $m("main a[href*='/show/'], article a[href*='/show/'], [role='main'] a[href*='/show/']").each((_,a)=>{
+    if($m(a).closest("nav, header, footer").length)return;
     const text=$m(a).text().replace(/\s+/g," ").trim();
     const href=$m(a).attr("href")||"";
     if(!text||text.length>100)return;
