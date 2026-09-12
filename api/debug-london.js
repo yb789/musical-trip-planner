@@ -71,7 +71,15 @@ export default async function handler(req,res){
     if(!hasPerformances)verdict="dropped: container has no 'Performances' text";
     else if(!musical)verdict="dropped: title not matched to any londontheatre.co.uk musical";
     else if(!timesFound.length)verdict="dropped: no h:mm am/pm times in container";
-    headings.push({tag:h.tagName,title,norm,matched:musical,hasPerformances,hasPlayingAt,times:timesFound,verdict,blockPreview:block.slice(0,220)});
+    let perfHtml=null;
+    if(title.toLowerCase().includes(needle)){
+      const raw=String(container.html()||"");
+      const pi=raw.indexOf("Performances");
+      perfHtml=raw.slice(Math.max(0,pi-200),pi+2500).replace(/\s+/g," ").replace(/https?:\/\/[^\s"']+/g,"URL");
+    }
+    const item=container.is("[data-categories]")?container:container.closest("[data-categories]");
+    const cats=String(item.attr("data-categories")||"");
+    headings.push({tag:h.tagName,title,norm,matched:musical,cats,hasPerformances,hasPlayingAt,times:timesFound,verdict,blockPreview:block.slice(0,220),perfHtml});
   });
 
   const needleInTimesHtml=(times.text.toLowerCase().match(new RegExp(needle,"g"))||[]).length;
