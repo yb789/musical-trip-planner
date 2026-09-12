@@ -44,15 +44,17 @@ async function scrapeLondonDay(date){
 
   const $m=cheerio.load(musicalHtml);
   const musicalNames=new Map();
-  $m("main a, article a, [role='main'] a").each((_,a)=>{
+  // Real show links on londontheatre.co.uk look like /show/46308-billy-elliot-the-musical.
+  // Select by href, not by link text: a text filter on the word "musical" used to discard
+  // every title containing it (Billy Elliot the Musical, Matilda The Musical, SIX the Musical...).
+  $m("a[href*='/show/']").each((_,a)=>{
     const text=$m(a).text().replace(/\s+/g," ").trim();
     const href=$m(a).attr("href")||"";
     if(!text||text.length>100)return;
-    if(/news|review|ticket|today|weekend|musical|west end|theatre week|all shows/i.test(text))return;
-    if(/\/(show|shows|tickets|theatre)\b/i.test(href)||href.startsWith("/")){
-      const n=normalizeTitle(text);
-      if(n.length>=3)musicalNames.set(n,{name:text,href:absolute(musicalUrl,href)});
-    }
+    if(!/\/show\/\d+/.test(href))return;
+    if(/^(from\s*£|£)/i.test(text))return;
+    const n=normalizeTitle(text);
+    if(n.length>=3&&!musicalNames.has(n))musicalNames.set(n,{name:text,href:absolute(musicalUrl,href)});
   });
 
   const $=cheerio.load(timesHtml);
@@ -67,6 +69,12 @@ async function scrapeLondonDay(date){
     const norm=normalizeTitle(title);
     let musical=musicalNames.get(norm);
     if(!musical){for(const [k,v] of musicalNames){if(k===norm||(k.length>5&&norm.length>5&&(k.includes(norm)||norm.includes(k)))){musical=v;break}}}
+    // Safety net: London Box Office tags each listing with categories; "m" = musical.
+    if(!musical){
+      const item=container.is("[data-categories]")?container:container.closest("[data-categories]");
+      const cats=String(item.attr("data-categories")||"").split(/\s+/);
+      if(cats.includes("m"))musical={name:title,href:""};
+    }
     if(!musical)return;
     const times=extractTimes(block);
     if(!times.length)return;
