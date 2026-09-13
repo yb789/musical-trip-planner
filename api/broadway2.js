@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { applySeatPlanLinks } from "./seatplan.js";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const cache = new Map();
@@ -179,7 +180,9 @@ async function scrape(start,end){
   }
 
   if(!shows.length) throw new Error('Broadway.com full schedule pages returned no performances for the selected range');
-  return {shows,schedule,sources:['Broadway.com full show schedule pages']};
+  // Ticket links point at SeatPlan; the Broadway.com show page stays available as infoUrl / sourceTicketUrl.
+  await applySeatPlanLinks('broadway',shows);
+  return {shows,schedule,sources:['Broadway.com full show schedule pages','SeatPlan (ticket links)']};
 }
 
 export default async function handler(req,res){
