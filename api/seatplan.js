@@ -4,6 +4,8 @@ import * as cheerio from "cheerio";
 // link always points at SeatPlan (London: seatplan.com/london/..., Broadway: seatplan.com/new-york/...).
 // The listing page is scraped once per city and cached; if the fetch fails or a show
 // cannot be matched, the link falls back to the SeatPlan city listing page.
+//
+// GET /api/seatplan?city=london|broadway returns the parsed show list (debug aid).
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const cache = new Map();
@@ -129,4 +131,13 @@ export async function applySeatPlanLinks(city, showList) {
     show.ticketUrl = matchSeatPlanUrl(city, show.name, shows);
   }
   return showList;
+}
+
+export default async function handler(req, res) {
+  const city = String(req.query?.city || "london").toLowerCase();
+  const shows = await loadSeatPlanShows(city);
+  res.status(200);
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate=86400");
+  res.end(JSON.stringify({ city, count: shows.length, shows }));
 }
