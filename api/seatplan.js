@@ -150,6 +150,36 @@ export function seatPlanFallbackUrl(city) {
   return (CITY_CONFIG[city] || CITY_CONFIG.london).base;
 }
 
+function editDistance(a, b) {
+  const rows = a.length + 1, cols = b.length + 1;
+  let prev = Array.from({ length: cols }, (_, j) => j);
+  for (let i = 1; i < rows; i++) {
+    const cur = [i];
+    for (let j = 1; j < cols; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = cur;
+  }
+  return prev[cols - 1];
+}
+
+// Scores how well a scraped title matches a SeatPlan title (both already normalized).
+// 1 = identical; prefix matches ("shamilton" vs "shamiltonimprovisedhiphop") score high because
+// listing sites often append a subtitle; small typos are tolerated via edit distance.
+function nameScore(wanted, candidate) {
+  if (candidate === wanted) return 1;
+  const shorter = wanted.length <= candidate.length ? wanted : candidate;
+  const longer = shorter === wanted ? candidate : wanted;
+  if (shorter.length >= 6 && longer.startsWith(shorter)) return 0.9;
+  if (shorter.length >= 5 && longer.includes(shorter)) return 0.5 + 0.4 * (shorter.length / longer.length);
+  if (shorter.length >= 8) {
+    const d = editDistance(wanted, candidate);
+    if (d <= 2) return 0.85 - 0.1 * d;
+  }
+  return 0;
+}
+
 export function matchSeatPlanShow(city, showName, shows) {
   const wanted = normalizeName(showName);
   if (!wanted) return null;
@@ -158,11 +188,9 @@ export function matchSeatPlanShow(city, showName, shows) {
   for (const show of shows) {
     const candidate = normalizeName(show.name);
     if (!candidate) continue;
-    if (candidate === wanted) return show;
-    if (candidate.length >= 5 && wanted.length >= 5 && (candidate.includes(wanted) || wanted.includes(candidate))) {
-      const score = Math.min(candidate.length, wanted.length) / Math.max(candidate.length, wanted.length);
-      if (!best || score > best.score) best = { show, score };
-    }
+    const score = nameScore(wanted, candidate);
+    if (score === 1) return show;
+    if (score > 0 && (!best || score > best.score)) best = { show, score };
   }
   if (best && best.score >= 0.6) return best.show;
   return null;
