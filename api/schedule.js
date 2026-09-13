@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 import broadwayHandler from "./broadway2.js";
-import { applySeatPlanLinks } from "./seatplan.js";
+import { applySeatPlanLinks, enrichMissingShowInfo } from "./seatplan.js";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const cache = new Map();
@@ -123,6 +123,7 @@ async function scrapeLondonRange(start,end){
   for(const d of dates){const seen=new Set();schedule[d]=schedule[d].filter(([n,t])=>{const k=`${normalizeTitle(n)}|${t}`;if(seen.has(k))return false;seen.add(k);return true})}
   // Ticket links point at SeatPlan; the original London Box Office link is kept as sourceTicketUrl.
   const showList=await applySeatPlanLinks("london",[...shows.values()]);
+  await enrichMissingShowInfo(showList,"LondonTheatre.co.uk");
   return {shows:showList,schedule,sources:["LondonTheatre.co.uk (musical listings)","London Box Office (performance times)","SeatPlan (ticket links)"]};
 }
 

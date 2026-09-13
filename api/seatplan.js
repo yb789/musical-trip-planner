@@ -184,7 +184,61 @@ export async function applySeatPlanLinks(city, showList) {
     // Poster/logo image and one-line plot summary for the hover tooltip in the planner.
     show.image = match?.image || "";
     show.description = match?.description || "";
+    show.infoSource = match && (match.image || match.description) ? "SeatPlan" : "";
   }
+  return showList;
+}
+
+// Fallback for shows SeatPlan does not list: read Open Graph image/description from the
+// show's own info page (londontheatre.co.uk / broadway.com). Cached per URL, never throws.
+const INFO_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const infoCache = new Map();
+
+function firstMeta($, names) {
+  for (const name of names) {
+    const v = $(`meta[property="${name}"]`).attr("content") || $(`meta[name="${name}"]`).attr("content") || "";
+    if (v && v.trim()) return v.trim();
+  }
+  return "";
+}
+
+async function fetchShowInfo(url) {
+  if (!url || !/^https?:/.test(url)) return { image: "", description: "" };
+  const cached = infoCache.get(url);
+  if (cached && Date.now() - cached.at < INFO_CACHE_TTL_MS) return cached.info;
+  let info = { image: "", description: "" };
+  try {
+    const html = await fetchText(url);
+    const $ = cheerio.load(html);
+    let image = firstMeta($, ["og:image", "og:image:secure_url", "twitter:image"]);
+    try { image = image ? new URL(image, url).href : ""; } catch { image = ""; }
+    let description = firstMeta($, ["og:description", "description", "twitter:description"]);
+    description = description.replace(/\s+/g, " ").trim();
+    // Generic marketing boilerplate ("Book tickets for X ...") is not a synopsis.
+    if (/^(book|buy|get|find|official)\b.*\btickets?\b/i.test(description) && description.length < 90) description = "";
+    if (description.length > 400) description = description.slice(0, 397).replace(/\s+\S*$/, "") + "…";
+    info = { image, description };
+  } catch (err) {
+    console.error("Show info fetch failed:", url, String(err?.message || err));
+  }
+  infoCache.set(url, { at: Date.now(), info });
+  return info;
+}
+
+export async function enrichMissingShowInfo(showList, sourceLabel) {
+  const missing = showList.filter(show => (!show.image || !show.description) && show.infoUrl);
+  const limit = 4;
+  let next = 0;
+  async function worker() {
+    while (next < missing.length) {
+      const show = missing[next++];
+      const info = await fetchShowInfo(show.infoUrl);
+      if (!show.image && info.image) show.image = info.image;
+      if (!show.description && info.description) show.description = info.description;
+      if ((info.image || info.description) && !show.infoSource) show.infoSource = sourceLabel;
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, missing.length) }, worker));
   return showList;
 }
 

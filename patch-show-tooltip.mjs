@@ -77,7 +77,7 @@ const js=`
       +'<div class="tip-body"><div class="tip-title">'+esc(title)+'</div>'
       +(m.description?'<div class="tip-desc">'+esc(m.description)+'</div>':'')
       +(venue?'<div class="tip-venue">🎭 '+esc(venue)+'</div>':'')
-      +'<div class="tip-credit">Image and synopsis via SeatPlan</div></div>';
+      +'<div class="tip-credit">Image and synopsis via '+esc(m.infoSource||'SeatPlan')+'</div></div>';
     return true;
   }
   function place(x,y){
