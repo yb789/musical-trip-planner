@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node patch-index.mjs && node patch-calendar-v2.mjs && node patch-price-simple.mjs && node patch-no-past-dates.mjs && node patch-date-calendar.mjs && node patch-ticket-confirmation.mjs && node patch-seatplan-link.mjs && mkdir -p public && cp index.html public/index.html",
+  "buildCommand": "node patch-index.mjs && node patch-calendar-v2.mjs && node patch-price-simple.mjs && node patch-no-past-dates.mjs && node patch-date-calendar.mjs && node patch-ticket-confirmation.mjs && node patch-seatplan-link.mjs && node patch-show-tooltip.mjs && mkdir -p public && cp index.html public/index.html",
   "outputDirectory": "public",
   "rewrites": [
     {

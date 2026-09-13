@@ -62,6 +62,43 @@ async function fetchText(url) {
   }
 }
 
+function normalizeAlt(value){return String(value||"").toLowerCase().replace(/[^a-z0-9]+/g,"")}
+function pickImage($,el){
+  const img=$(el).find("img").first();
+  if(!img.length)return "";
+  const raw=img.attr("data-src")||img.attr("data-lazy-src")||img.attr("src")||"";
+  if(raw)return raw;
+  const srcset=img.attr("data-srcset")||img.attr("srcset")||"";
+  return srcset.split(",")[0].trim().split(/\s+/)[0]||"";
+}
+function pickDescription($,el,title){
+  const norm=normalizeAlt(title);
+  const skip=t=>!t||t.length<35||t.length>500||normalizeAlt(t)===norm||/^(from|save up to|opens|theatre week)/i.test(t)||/^[\d.]+$/.test(t);
+  const candidates=[];
+  $(el).find("p, div, span").each((_,node)=>{
+    if($(node).children().length&&$(node).find("p, div, span").length)return;
+    const t=$(node).text().replace(/\s+/g," ").trim();
+    if(!skip(t))candidates.push(t);
+  });
+  if(candidates.length)return candidates[0];
+  const whole=$(el).text().replace(/\s+/g," ").trim().replace(title,"").trim();
+  const sentence=whole.match(/[A-Z][^.!?]{30,400}[.!?]/);
+  return sentence?sentence[0].trim():"";
+}
+function cardFor($,a,title){
+  const norm=normalizeAlt(title);
+  let node=$(a).parent();
+  for(let i=0;i<8&&node.length&&!node.is("body");i++){
+    const imgs=node.find("img");
+    if(imgs.length){
+      const altMatch=imgs.filter((_,img)=>normalizeAlt($(img).attr("alt"))===norm).length>0;
+      if(altMatch||imgs.length===1)return node;
+    }
+    node=node.parent();
+  }
+  return null;
+}
+
 function parseListing(html, config) {
   const $ = cheerio.load(html);
   const byHref = new Map();
@@ -74,8 +111,17 @@ function parseListing(html, config) {
     const text = $(a).text().replace(/\s+/g, " ").trim();
     if (!text || text.length > 120) return;
     if (!href.endsWith("/")) href += "/";
+    const card = cardFor($, a, text);
+    let image = "";
+    let description = "";
+    if (card) {
+      try { image = new URL(pickImage($, card) || "", config.base).href; } catch { image = ""; }
+      if (!/^https?:/.test(image) || !/\.(webp|jpe?g|png|avif)(\?|$)/i.test(image)) image = "";
+      description = pickDescription($, card, text);
+    }
     const prev = byHref.get(href);
-    if (!prev || text.length > prev.name.length) byHref.set(href, { name: text, href });
+    if (!prev || text.length > prev.name.length) byHref.set(href, { name: text, href, image: image || prev?.image || "", description: description || prev?.description || "" });
+    else { if (!prev.image && image) prev.image = image; if (!prev.description && description) prev.description = description; }
   });
   return [...byHref.values()];
 }
@@ -104,31 +150,40 @@ export function seatPlanFallbackUrl(city) {
   return (CITY_CONFIG[city] || CITY_CONFIG.london).base;
 }
 
-export function matchSeatPlanUrl(city, showName, shows) {
+export function matchSeatPlanShow(city, showName, shows) {
   const wanted = normalizeName(showName);
-  if (!wanted) return seatPlanFallbackUrl(city);
+  if (!wanted) return null;
 
   let best = null;
   for (const show of shows) {
     const candidate = normalizeName(show.name);
     if (!candidate) continue;
-    if (candidate === wanted) return show.href;
+    if (candidate === wanted) return show;
     if (candidate.length >= 5 && wanted.length >= 5 && (candidate.includes(wanted) || wanted.includes(candidate))) {
       const score = Math.min(candidate.length, wanted.length) / Math.max(candidate.length, wanted.length);
-      if (!best || score > best.score) best = { href: show.href, score };
+      if (!best || score > best.score) best = { show, score };
     }
   }
-  if (best && best.score >= 0.6) return best.href;
-  return seatPlanFallbackUrl(city);
+  if (best && best.score >= 0.6) return best.show;
+  return null;
 }
 
-// Rewrites ticketUrl on every show to its SeatPlan page. Never throws.
+export function matchSeatPlanUrl(city, showName, shows) {
+  const match = matchSeatPlanShow(city, showName, shows);
+  return match ? match.href : seatPlanFallbackUrl(city);
+}
+
+// Rewrites ticketUrl on every show to its SeatPlan page and attaches image/description. Never throws.
 export async function applySeatPlanLinks(city, showList) {
   let shows = [];
   try { shows = await loadSeatPlanShows(city); } catch { shows = []; }
   for (const show of showList) {
     show.sourceTicketUrl = show.ticketUrl || "";
-    show.ticketUrl = matchSeatPlanUrl(city, show.name, shows);
+    const match = matchSeatPlanShow(city, show.name, shows);
+    show.ticketUrl = match ? match.href : seatPlanFallbackUrl(city);
+    // Poster/logo image and one-line plot summary for the hover tooltip in the planner.
+    show.image = match?.image || "";
+    show.description = match?.description || "";
   }
   return showList;
 }
