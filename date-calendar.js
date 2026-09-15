@@ -9,6 +9,13 @@
   dateOverlay.innerHTML = `
     <div class="modal date-picker-modal">
       <h2>Choose your city and trip dates</h2>
+      <div id="savedNotice" class="saved-notice hidden">
+        <div id="savedNoticeText"></div>
+        <div class="actions">
+          <button id="savedKeep" type="button">Keep them</button>
+          <button id="savedClear" type="button" class="danger">Start fresh</button>
+        </div>
+      </div>
       <p class="small">Choose the city, then click a start date and an end date on the calendar. Use the arrows to move to the next or previous month.</p>
       <div class="field city-field">
         <label for="startCity">City</label>
@@ -458,8 +465,31 @@
     if (plan) await applyPlan(plan);
   };
 
+  // Startup notice: selections saved by a previous visit can be kept or wiped before planning.
+  function showSavedNotice() {
+    if (typeof savedSelectionSummary !== 'function') return;
+    const { shows, hidden } = savedSelectionSummary();
+    if (!shows && !hidden) return;
+    const parts = [];
+    if (shows) parts.push(`<b>${shows} chosen performance${shows === 1 ? '' : 's'}</b>`);
+    if (hidden) parts.push(`<b>${hidden} unticked musical${hidden === 1 ? '' : 's'}</b>`);
+    $('savedNoticeText').innerHTML = `This browser still has ${parts.join(' and ')} from a previous visit. Keep them, or start fresh?`;
+    $('savedNotice').classList.remove('hidden', 'cleared');
+    $('savedKeep').classList.remove('hidden');
+    $('savedClear').classList.remove('hidden');
+  }
+  $('savedKeep').onclick = () => $('savedNotice').classList.add('hidden');
+  $('savedClear').onclick = () => {
+    clearAllSelections();
+    $('savedNoticeText').textContent = 'Previous selections cleared. You are starting fresh.';
+    $('savedNotice').classList.add('cleared');
+    $('savedKeep').classList.add('hidden');
+    $('savedClear').classList.add('hidden');
+  };
+
   $('startCity').value = state.city;
   setMonthFromISO(iso(new Date()));
   renderPicker();
   renderCities();
+  showSavedNotice();
 })();
