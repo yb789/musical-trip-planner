@@ -1,11 +1,51 @@
-import { ImageResponse } from "@vercel/og";
+import fs from "node:fs";
+import { createRequire } from "node:module";
+import satori from "satori";
+import { Resvg, initWasm } from "@resvg/resvg-wasm";
 
 // Generates the site's share image and app icons on demand (no binary files in the repo).
-//   /api/og                  -> 1200x630 Open Graph / Twitter card image
+//   /api/og                  -> 1200x630 Open Graph / Twitter card image (PNG)
 //   /api/og?icon=180         -> square PNG icon (favicon / apple-touch-icon / manifest)
-// Later this same function can render a per-itinerary preview (e.g. /api/og?plan=...).
+// Runs on the Node runtime: satori (HTML-like element tree -> SVG) + resvg (SVG -> PNG).
+// Fonts are fetched once from Google Fonts and cached in memory for the life of the instance.
+// @vercel/og itself only works inside Next.js on the edge runtime, hence the direct libraries.
 
-export const config = { runtime: "edge" };
+const require = createRequire(import.meta.url);
+let wasmReady;
+function ensureWasm() {
+  if (!wasmReady) wasmReady = initWasm(fs.readFileSync(require.resolve("@resvg/resvg-wasm/index_bg.wasm")));
+  return wasmReady;
+}
+
+const FONT_UA = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0"; // old UA -> Google serves TTF
+const fontCache = new Map();
+async function googleFont(family, weight) {
+  const key = `${family}:${weight}`;
+  if (fontCache.has(key)) return fontCache.get(key);
+  const p = (async () => {
+    const css = await fetch(`https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@${weight}&display=swap`, { headers: { "User-Agent": FONT_UA } }).then(r => r.text());
+    const url = css.match(/src:\s*url\(([^)]+)\)/)?.[1];
+    if (!url) throw new Error(`No font URL for ${family} ${weight}`);
+    return Buffer.from(await fetch(url).then(r => r.arrayBuffer()));
+  })();
+  fontCache.set(key, p);
+  p.catch(() => fontCache.delete(key));
+  return p;
+}
+async function fonts() {
+  const [serifBold, sans, sansBold] = await Promise.all([googleFont("Playfair Display", 700), googleFont("Inter", 400), googleFont("Inter", 700)]);
+  return [
+    { name: "serif", data: serifBold, weight: 700, style: "normal" },
+    { name: "sans-serif", data: sans, weight: 400, style: "normal" },
+    { name: "sans-serif", data: sansBold, weight: 700, style: "normal" }
+  ];
+}
+
+async function renderPng(element, width, height) {
+  await ensureWasm();
+  const svg = await satori(element, { width, height, fonts: await fonts() });
+  return Buffer.from(new Resvg(svg, { fitTo: { mode: "width", value: width } }).render().asPng());
+}
 
 const INK = "#17130f";
 const GOLD = "#d6a860";
@@ -48,12 +88,17 @@ export function iconImage(size) {
   );
 }
 
-export default function handler(req) {
-  const { searchParams } = new URL(req.url);
-  const icon = Number(searchParams.get("icon"));
-  const headers = { "Cache-Control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000" };
-  if (icon >= 16 && icon <= 1024) {
-    return new ImageResponse(iconImage(icon), { width: icon, height: icon, headers });
+export default async function handler(req, res) {
+  try {
+    const icon = Number((req.query && req.query.icon) || 0);
+    const png = icon >= 16 && icon <= 1024
+      ? await renderPng(iconImage(icon), icon, icon)
+      : await renderPng(shareImage(), 1200, 630);
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000");
+    res.status(200).send(png);
+  } catch (err) {
+    console.error("og image failed", err);
+    res.status(500).json({ error: String(err && err.message || err) });
   }
-  return new ImageResponse(shareImage(), { width: 1200, height: 630, headers });
 }
