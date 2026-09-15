@@ -340,7 +340,7 @@
         const inside = isTripDate(date);
         const cell = document.createElement('div');
         cell.className = `day-cell ${inside ? 'inrange' : 'out'}${date === state.active ? ' active' : ''}`;
-        cell.innerHTML = `<b>${n}</b>`;
+        cell.innerHTML = `<b>${n}<span class="day-wd">${new Date(y, m, n, 12).toLocaleDateString('en-GB', { weekday: 'short' })}</span></b>`;
         if (inside) {
           const choice = choices()[date] || {};
           cell.innerHTML += calendarChoiceHtml('☀️', choice.matinee) + calendarChoiceHtml('🌙', choice.evening);

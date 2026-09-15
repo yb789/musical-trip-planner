@@ -121,7 +121,7 @@ function renderCalendar(){
     for(let n=1;n<=total;n++){
       const d=iso(new Date(y,m,n,12)),inside=d>=state.start&&d<=state.end,cell=document.createElement('div');
       cell.className='day-cell '+(inside?'inrange':'out')+(d===state.active?' active':'');
-      cell.innerHTML=\`<b>\${n}</b>\`;
+      cell.innerHTML=\`<b>\${n}<span class="day-wd">\${new Date(y,m,n,12).toLocaleDateString('en-GB',{weekday:'short'})}</span></b>\`;
       if(inside){
         const ch=choices()[d]||{};
         cell.innerHTML+=calendarChoiceHtml('☀️',ch.matinee)+calendarChoiceHtml('🌙',ch.evening);
