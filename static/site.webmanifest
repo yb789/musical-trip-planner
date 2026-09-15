@@ -1,0 +1,21 @@
+{
+  "name": "Musical Trip Planner",
+  "short_name": "Musical Trip",
+  "description": "Plan West End and Broadway shows by date: one matinee and one evening per day, with live schedules, theatre addresses and exports.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f1e8",
+  "theme_color": "#17130f",
+  "icons": [
+    {
+      "src": "/api/og?icon=192",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/api/og?icon=512",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

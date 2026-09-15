@@ -1,6 +1,13 @@
 {
   "buildCommand": "node build.mjs",
   "outputDirectory": "public",
+  "functions": {
+    "api/og.js": {
+      "includeFiles": "node_modules/@resvg/resvg-wasm/index_bg.wasm",
+      "memory": 1024,
+      "maxDuration": 15
+    }
+  },
   "rewrites": [
     {
       "source": "/",

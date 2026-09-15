@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "cheerio": "^1.0.0"
+    "cheerio": "^1.0.0",
+    "satori": "^0.33.3",
+    "@resvg/resvg-wasm": "^2.4.1"
   },
   "engines": {
     "node": ">=20"
