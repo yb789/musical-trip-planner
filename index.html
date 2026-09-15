@@ -3,7 +3,35 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Musical Trip Planner</title>
+<title>Musical Trip Planner — plan West End &amp; Broadway shows by date</title>
+<meta name="description" content="Free West End and Broadway trip planner: pick your dates, see which musicals play each day, choose a matinee and an evening show, and export your itinerary.">
+<link rel="canonical" href="https://musicaltripplanner.com/">
+<meta name="theme-color" content="#17130f">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Musical Trip Planner">
+<meta property="og:title" content="Musical Trip Planner — plan West End & Broadway shows by date">
+<meta property="og:description" content="Pick your trip dates, see which musicals play each day, choose one matinee and one evening show per day, and export your itinerary. Free, no ads.">
+<meta property="og:url" content="https://musicaltripplanner.com/">
+<meta property="og:image" content="https://musicaltripplanner.com/api/og">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Musical Trip Planner — plan West End and Broadway shows by date">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Musical Trip Planner — plan West End & Broadway shows by date">
+<meta name="twitter:description" content="Pick your trip dates, see which musicals play each day, choose one matinee and one evening show per day, and export your itinerary. Free, no ads.">
+<meta name="twitter:image" content="https://musicaltripplanner.com/api/og">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/api/og?icon=32" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/api/og?icon=180">
+<link rel="manifest" href="/site.webmanifest">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"WebSite","@id":"https://musicaltripplanner.com/#website","url":"https://musicaltripplanner.com/","name":"Musical Trip Planner","description":"Plan West End and Broadway musical-theatre trips by date.","inLanguage":"en"},
+ {"@type":"WebApplication","@id":"https://musicaltripplanner.com/#app","name":"Musical Trip Planner","url":"https://musicaltripplanner.com/","applicationCategory":"TravelApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free planner for London West End and New York Broadway trips: choose dates, see which musicals play each day, pick one matinee and one evening performance per day, get theatre addresses and export the itinerary to PDF or Excel.","featureList":["Live date-specific West End and Broadway schedules","One matinee and one evening performance per day","Theatre names and addresses","Duplicate-show warning","Ticket links to third-party sellers","PDF and Excel export","Works on phones and desktops"],"about":[{"@type":"Place","name":"West End, London"},{"@type":"Place","name":"Broadway, New York"}]}
+]}
+</script>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
+<script defer src="/_vercel/insights/script.js"></script>
 <style>
 :root{--bg:#f5f1e8;--paper:#fffdf8;--ink:#181818;--muted:#6b665f;--line:#ddd6ca;--accent:#7c2d12;--green:#1f4b3f;--shadow:0 12px 35px rgba(30,25,20,.08)}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}
@@ -20,6 +48,7 @@ main{padding:22px}.panel{background:var(--paper);border:1px solid var(--line);bo
 .calendar-view{display:none}.calendar-view.active,.schedule-view.active{display:block}.schedule-view{display:none}.month{border:1px solid var(--line);border-radius:15px;background:#fff;margin-bottom:16px;overflow:hidden}.month-title{font:700 21px Georgia,serif;padding:14px 15px;border-bottom:1px solid var(--line);background:#faf6ef}.weekdays,.month-grid{display:grid;grid-template-columns:repeat(7,1fr)}.weekdays div{font-size:11px;font-weight:800;color:var(--muted);padding:8px;text-align:center;border-bottom:1px solid var(--line)}.day-cell{min-height:105px;padding:8px;border-right:1px solid #eee8df;border-bottom:1px solid #eee8df;background:#fff}.day-cell.out{background:#faf8f4;color:#bbb}.day-cell.inrange{cursor:pointer}.day-cell.active{outline:2px solid var(--green);outline-offset:-2px}.calendar-choice{margin-top:6px;border-radius:8px;background:#edf3f0;padding:6px;font-size:10px}.calendar-choice b{display:block;font-size:11px;margin-bottom:2px}
 .overlay{position:fixed;inset:0;background:rgba(18,15,12,.68);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch}.overlay.hidden{display:none}.modal{margin:auto;width:min(620px,100%);background:var(--paper);border:1px solid var(--line);border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.28);padding:24px}.modal h2{font-size:30px}.date-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}.field input,.field select{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff;color:var(--ink)}.city-field{margin-bottom:14px}.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}.error{color:#9a2c19;font-size:13px;min-height:18px;margin-top:10px}.spinner{width:34px;height:34px;border:4px solid #ddd5ca;border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px}@keyframes spin{to{transform:rotate(360deg)}}
 .saved-notice{margin:0 0 14px;padding:11px 12px;border:1px solid #e5c681;border-radius:12px;background:#fff7e6;color:#5a4410;font-size:13px;line-height:1.45}.saved-notice b{color:#3d2e08}.saved-notice .actions{margin-top:9px;justify-content:flex-start}.saved-notice.cleared{background:#edf3f0;border-color:#b7cfc5;color:#24483e}
+.intro{max-width:1240px;margin:0 auto 14px;padding:16px 18px}.intro h2{font-size:20px;margin:0 0 8px}.intro p{margin:0 0 9px;line-height:1.5;font-size:14px}.intro p:last-child{margin-bottom:0}body.planning .intro{display:none}
 .legal{margin-top:16px;padding:14px 16px;color:var(--muted);font-size:11px;line-height:1.5}.legal b{color:var(--ink)}#printReport{display:none}
 .day-wd{display:none}
 @media(max-width:900px){.layout{grid-template-columns:1fr}.musical-list{max-height:300px}.sessions{grid-template-columns:1fr}.day-cell{min-height:90px}.day-head{align-items:flex-start;flex-direction:column}
@@ -42,6 +71,7 @@ button{min-height:44px}.pick{min-height:40px}.day-btn{min-width:64px}.tab{flex:1
 <div id="finishOverlay" class="overlay hidden"><div class="modal"><div id="finishConfirm"><h2>Finish planning?</h2><p>Are you finished choosing performances for this trip?</p><div class="actions"><button id="finishNo">No, keep editing</button><button id="finishYes" class="primary">Yes, I'm finished</button></div></div><div id="exportPanel" class="hidden"><h2>Your schedule is ready</h2><p>Export your selected schedule.</p><div class="actions"><button id="excelBtn" class="primary">Export to Excel</button><button id="pdfBtn" class="primary">Export to PDF</button><button id="returnBtn">Return to planner</button></div><p class="small">PDF opens the browser print dialog; choose Save as PDF.</p></div></div></div>
 
 <main>
+<section class="intro panel"><h2>What this planner does</h2><p>Musical Trip Planner is a free tool for people visiting <b>London’s West End</b> or <b>New York’s Broadway</b> who want to see as many musicals as their trip allows. Choose a city and your travel dates, and the planner fetches the live performance schedule for exactly those dates, so the list only ever shows musicals that are actually playing on the day you are looking at.</p><p>For each day you can pick <b>one matinee</b> (a performance starting before 17:00) and <b>one evening show</b> (17:00 or later), which is how theatre fans fit two musicals into a single day. Untick the shows you are not interested in, and the planner warns you if you choose the same musical twice. Every selected performance shows the theatre name and street address, plus links to ticket sellers. When you are done, <b>My calendar</b> shows the whole trip at a glance and you can export it to <b>PDF or Excel</b>.</p><p class="small">The planner is an itinerary tool, not a ticket seller: purchases happen on the ticket provider’s own site. Nothing is uploaded — your plan stays in your browser.</p></section>
 <div id="status" class="live-status">Choose a city and dates to load live schedules.</div>
 <section class="trip-bar panel"><div><b id="rangeLabel">Trip dates</b><div class="small">Schedules update whenever you change the dates or city.</div></div><div class="tools"><button id="changeDatesBtn">Change city / dates</button><button id="clearAllBtnTop" class="danger">Clear all selections</button><button id="finishBtn" class="primary">Finish planning</button></div></section>
 <div class="city-switch"><button id="londonBtn" class="city-btn active">🇬🇧 London · West End</button><button id="broadwayBtn" class="city-btn">🗽 New York · Broadway</button></div>
@@ -64,7 +94,7 @@ function days(){const out=[];let d=state.start,g=0;while(d<=state.end&&g++<31){o
 function availableNames(){return new Set((current().schedule[state.active]||[]).map(([n])=>n))}function availableShows(){const names=availableNames();return current().shows.filter(s=>names.has(s.name))}
 function setStatus(msg,type=''){$('status').textContent=msg;$('status').className='live-status'+(type?' '+type:'')}function setLoading(on,msg=''){$('loadingOverlay').classList.toggle('hidden',!on);if(msg)$('loadingText').textContent=msg}
 async function loadSchedule(){setLoading(true,`Searching ${cityLabel()} from ${fmt(state.start,{day:'numeric',month:'short'})} to ${fmt(state.end,{day:'numeric',month:'short',year:'numeric'})}…`);setStatus('Searching live theatre schedules…');try{const r=await fetch(`/api/schedule?city=${encodeURIComponent(state.city)}&start=${state.start}&end=${state.end}`);const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`Schedule service returned ${r.status}`);if(!Array.isArray(data.shows)||!data.schedule)throw new Error('Incomplete schedule data');state.data[state.city]={shows:data.shows,schedule:data.schedule};const perf=Object.values(data.schedule).reduce((n,a)=>n+(Array.isArray(a)?a.length:0),0);setStatus(`Live schedule refreshed: ${data.shows.length} musicals and ${perf} performance slots found. ${(data.sources||[]).join(' + ')}`,'ok');renderAll()}catch(e){console.error(e);setStatus(`Live search failed: ${e.message}`,'error');renderAll()}finally{setLoading(false)}}
-function renderAll(){renderCities();renderRange();renderDays();renderSidebar();renderDay();renderCalendar();save()}
+function renderAll(){if(state.start&&state.end)document.body.classList.add('planning');renderCities();renderRange();renderDays();renderSidebar();renderDay();renderCalendar();save()}
 function renderCities(){$('londonBtn').classList.toggle('active',state.city==='london');$('broadwayBtn').classList.toggle('active',state.city==='broadway')}
 function renderRange(){$('rangeLabel').textContent=`${cityLabel()} · ${fmt(state.start,{day:'numeric',month:'short',year:'numeric'})} – ${fmt(state.end,{day:'numeric',month:'short',year:'numeric'})}`}
 function renderDays(){$('dayStrip').innerHTML='';for(const d of days()){const x=parseISO(d),ch=choices()[d]||{},b=document.createElement('button');b.className='day-btn'+(d===state.active?' active':'')+((ch.matinee||ch.evening)?' chosen':'');b.innerHTML=`<span>${x.toLocaleDateString('en-GB',{weekday:'short'})}</span><b>${x.getDate()}</b><span>${x.toLocaleDateString('en-GB',{month:'short'})}</span>`;b.onclick=()=>{state.active=d;renderDays();renderSidebar();renderDay();renderCalendar()};$('dayStrip').appendChild(b)}}
