@@ -997,6 +997,24 @@ Because this is plain Markdown, Obsidian and essentially every AI coding platfor
 
 ---
 
+## 31. Mobile / responsive layout (added 2026-09-15)
+
+The site is responsive at three breakpoints (all in the base `<style>` of `index.html`):
+
+- **≤900px (tablet / phone):** single column; the musical list (`#sidebar`) becomes a collapsible panel with a `#sidebarToggle` button ("Filter musicals · N of M kept"), collapsed by default (`class="collapsed"` on the aside — harmless on desktop because the collapse rules live inside the media query).
+- **≤560px (phone):** 44px tap targets, ≥12px text, 16px inputs (prevents iOS focus-zoom), and **My calendar switches from the 7-column month grid to an agenda list** (one row per trip date with weekday label, `.day-wd`). The month grid is still rendered by JS; the agenda is pure CSS on `.day-cell.inrange`.
+
+Two global rules matter for every width:
+
+- `.layout>*{min-width:0}` — without it the horizontal day strip forces the whole page wider than the viewport (a 14-day trip made the page 1261px wide on a phone and 1629px on a 1280px laptop).
+- `.overlay{overflow-y:auto;align-items:flex-start}.modal{margin:auto}` — modals taller than the screen (the date picker is ~810px) can be scrolled instead of being clipped.
+
+The weekday label inside each calendar cell is emitted in **two** places because `date-calendar.js` overrides `renderCalendar` at runtime: `patch-index.mjs` (the built-in renderer) and `date-calendar.js` (the live one). Keep them in sync.
+
+Verification script (not in the repo): build with `node build.mjs` in a scratch copy, then render `public/index.html` in headless Chromium at 375/390/768/1280/1440 with a mocked `/api/schedule` and check `document.documentElement.scrollWidth === innerWidth`.
+
+---
+
 ## 30. Final state to preserve
 
 At the time of this handoff, the desired v1 behavior is:
