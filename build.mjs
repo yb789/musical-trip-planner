@@ -6,6 +6,7 @@ import fs from 'node:fs';
 // earlier patches produce.
 const patches = [
   'patch-index.mjs',
+  'patch-share-plan.mjs',
   'patch-calendar-v2.mjs',
   'patch-price-simple.mjs',
   'patch-no-past-dates.mjs',
