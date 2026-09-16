@@ -2,10 +2,12 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import satori from "satori";
 import { Resvg, initWasm } from "@resvg/resvg-wasm";
+import { loadPlan, isValidCode, planStats, cityShort, rangeLabel } from "../lib/plans.js";
 
 // Generates the site's share image and app icons on demand (no binary files in the repo).
 //   /api/og                  -> 1200x630 Open Graph / Twitter card image (PNG)
 //   /api/og?icon=180         -> square PNG icon (favicon / apple-touch-icon / manifest)
+//   /api/og?plan=abc123      -> share image for one saved itinerary (used by /plan/<code>)
 // Runs on the Node runtime: satori (HTML-like element tree -> SVG) + resvg (SVG -> PNG).
 // Fonts are fetched once from Google Fonts and cached in memory for the life of the instance.
 // @vercel/og itself only works inside Next.js on the edge runtime, hence the direct libraries.
@@ -80,6 +82,32 @@ export function shareImage() {
   );
 }
 
+// Share image for one saved itinerary (/api/og?plan=CODE): headline + first few show names.
+export function planImage(plan) {
+  const { shows, names } = planStats(plan);
+  const shown = names.slice(0, 4).map(n => (n.length > 34 ? n.slice(0, 33) + "…" : n));
+  const more = names.length - shown.length;
+  const rows = shown.map(n => h("div", { display: "flex", alignItems: "center", fontSize: 30, fontFamily: "sans-serif", color: PAPER, marginBottom: 10, whiteSpace: "nowrap" },
+    h("div", { width: 10, height: 10, borderRadius: 5, backgroundColor: GOLD, marginRight: 18 }), n));
+  if (more > 0) rows.push(h("div", { fontSize: 26, fontFamily: "sans-serif", color: "#cdbfb2", marginTop: 4 }, `+ ${more} more`));
+  return h("div", {
+      width: 1200, height: 630, display: "flex", position: "relative",
+      background: "linear-gradient(135deg, #17130f 0%, #35251c 100%)", color: PAPER, fontFamily: "serif"
+    },
+    h("div", { position: "absolute", left: 0, top: 0, display: "flex" }, curtain(110, 630, 5)),
+    h("div", { position: "absolute", right: 0, top: 0, display: "flex" }, curtain(110, 630, 5)),
+    h("div", { position: "absolute", left: 150, right: 150, top: 56, height: 4, backgroundColor: GOLD }),
+    h("div", { position: "absolute", left: 150, right: 150, bottom: 56, height: 4, backgroundColor: GOLD }),
+    h("div", { position: "absolute", left: 150, right: 150, top: 0, bottom: 0, display: "flex", flexDirection: "column", justifyContent: "center", paddingLeft: 40, paddingRight: 40 },
+      h("div", { fontSize: 24, fontWeight: 700, color: GOLD, fontFamily: "sans-serif", letterSpacing: 2, marginBottom: 14 }, "MY MUSICAL TRIP"),
+      h("div", { fontSize: 60, fontWeight: 700, color: PAPER, marginBottom: 6, whiteSpace: "nowrap" }, `${shows} musical${shows === 1 ? "" : "s"} in ${cityShort(plan.city)}`),
+      h("div", { fontSize: 34, color: "#eadfd5", fontFamily: "sans-serif", marginBottom: 30, whiteSpace: "nowrap" }, rangeLabel(plan.ranges)),
+      h("div", { display: "flex", flexDirection: "column" }, ...rows),
+      h("div", { fontSize: 24, fontWeight: 700, color: GOLD, marginTop: 34, fontFamily: "sans-serif" }, "Planned with musicaltripplanner.com")
+    )
+  );
+}
+
 export function iconImage(size) {
   const band = Math.round(size * 0.2);
   return h("div", { width: size, height: size, display: "flex", flexDirection: "column", backgroundColor: INK, borderRadius: Math.round(size * 0.22), overflow: "hidden" },
@@ -91,9 +119,16 @@ export function iconImage(size) {
 export default async function handler(req, res) {
   try {
     const icon = Number((req.query && req.query.icon) || 0);
-    const png = icon >= 16 && icon <= 1024
-      ? await renderPng(iconImage(icon), icon, icon)
-      : await renderPng(shareImage(), 1200, 630);
+    const planCode = String((req.query && req.query.plan) || "").toLowerCase();
+    let element = shareImage(), w = 1200, hgt = 630;
+    if (icon >= 16 && icon <= 1024) { element = iconImage(icon); w = hgt = icon; }
+    else if (planCode) {
+      try {
+        const found = isValidCode(planCode) ? await loadPlan(planCode) : null;
+        if (found) element = planImage(found.plan); // unknown code / DB trouble -> generic share image
+      } catch (e) { console.error("plan lookup failed, using generic image", e); }
+    }
+    const png = await renderPng(element, w, hgt);
     res.setHeader("Content-Type", "image/png");
     res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000");
     res.status(200).send(png);
