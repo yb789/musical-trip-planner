@@ -16,7 +16,7 @@
           <button id="savedClear" type="button" class="danger">Start fresh</button>
         </div>
       </div>
-      <p class="small">Choose the city, then click a start date and an end date on the calendar. Use the arrows to move to the next or previous month.</p>
+      <p class="small">Choose the city, then pick your trip dates on the calendar. Use the arrows to move between months.</p>
       <div class="field city-field">
         <label for="startCity">City</label>
         <select id="startCity">
@@ -24,6 +24,7 @@
           <option value="broadway">🗽 New York · Broadway</option>
         </select>
       </div>
+      <div id="pickerHint" class="picker-hint" aria-live="polite"><span class="picker-step">1</span><span id="pickerHintText">Click your <b>start</b> date</span></div>
       <div class="range-picker-head">
         <button id="pickerPrev" type="button" aria-label="Previous month">←</button>
         <strong id="pickerMonthLabel"></strong>
@@ -33,7 +34,6 @@
         <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
       </div>
       <div id="pickerCalendar" class="picker-calendar"></div>
-      <div id="pickerHint" class="small picker-hint">Click a start date, then an end date.</div>
       <div id="rangeParts" class="range-parts"></div>
       <div id="dateCountNote" class="date-count-note"></div>
       <div id="dateError" class="error"></div>
@@ -159,11 +159,18 @@
     }
 
     const active = picker.ranges[picker.activePart] || {};
-    $('pickerHint').textContent = !active.start
-      ? 'Click the start date.'
-      : !active.end
-        ? 'Now click the end date.'
-        : 'Range selected. Click another date to choose this part again.';
+    const hint = $('pickerHint');
+    const short = d => fmt(d, { day: 'numeric', month: 'short' });
+    if (!active.start) {
+      hint.className = 'picker-hint step-start';
+      hint.innerHTML = '<span class="picker-step">1</span><span id="pickerHintText">Click your <b>start</b> date</span>';
+    } else if (!active.end) {
+      hint.className = 'picker-hint step-end';
+      hint.innerHTML = `<span class="picker-step">2</span><span id="pickerHintText">Now click your <b>end</b> date <small>(start: ${short(active.start)})</small></span>`;
+    } else {
+      hint.className = 'picker-hint step-done';
+      hint.innerHTML = `<span class="picker-step">✓</span><span id="pickerHintText"><b>${short(active.start)} – ${short(active.end)}</b> selected — press Continue, or click a date to start over</span>`;
+    }
   }
 
   function chooseDate(date) {
