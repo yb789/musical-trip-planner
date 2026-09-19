@@ -3,6 +3,10 @@
 .ticket-confirmation-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .ticket-confirmation-actions button{font-size:11px;padding:6px 8px}
 .ticket-confirmation-ref{font-weight:800;color:#24483e;word-break:break-word}
+.ticket-confirmation-seat{font-weight:700;color:#24483e}
+.show-card .ticket-confirmation-box{margin-top:6px}
+.calendar-confirmation-btn{font-size:9px;line-height:1;padding:3px 6px;margin:2px 0 0;min-height:0;border-radius:6px}
+@media(max-width:560px){.calendar-confirmation-btn{display:block;min-height:30px;font-size:12px;padding:4px 9px;margin-top:5px}}
 .ticket-confirmation-file{color:var(--muted);font-size:10px;margin-top:2px;word-break:break-word}
 .calendar-confirmation{font-size:9px;line-height:1.25;margin-top:3px;color:#24483e;font-weight:750}
 .ticket-modal-note{padding:9px 10px;border-radius:10px;background:#edf3f0;color:#24483e;font-size:12px;line-height:1.45;margin:10px 0 14px}
