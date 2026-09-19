@@ -53,7 +53,23 @@ mustReplace(
     "Duke of York's Theatre":"St Martin's Lane, London WC2N 4BG, UK",
     "Charing Cross Theatre":"The Arches, Villiers Street, London WC2N 6NL, UK",
     "Savoy Theatre":"Savoy Court, Strand, London WC2R 0ET, UK",
-    "Fortune Theatre":"Russell Street, London WC2B 5HH, UK"
+    "Fortune Theatre":"Russell Street, London WC2B 5HH, UK",
+    "Gillian Lynne Theatre":"166 Drury Lane, London WC2B 5PW, UK",
+    "Adelphi Theatre":"409-412 Strand, London WC2R 0NS, UK",
+    "Apollo Theatre":"Shaftesbury Avenue, London W1D 7EZ, UK",
+    "Garrick Theatre":"2 Charing Cross Road, London WC2H 0HH, UK",
+    "Phoenix Theatre":"110 Charing Cross Road, London WC2H 0JP, UK",
+    "Harold Pinter Theatre":"Panton Street, London SW1Y 4DN, UK",
+    "Wyndham's Theatre":"Charing Cross Road, London WC2H 0DA, UK",
+    "Duchess Theatre":"3-5 Catherine Street, London WC2B 5LA, UK",
+    "@sohoplace":"4 Soho Place, London W1D 3BG, UK",
+    "Peacock Theatre":"Portugal Street, London WC2A 2HT, UK",
+    "Bridge Theatre":"3 Potters Fields Park, London SE1 2SG, UK",
+    "National Theatre":"Upper Ground, London SE1 9PX, UK",
+    "London Palladium":"Argyll Street, London W1F 7TF, UK",
+    "London Coliseum":"St Martin's Lane, London WC2N 4ES, UK",
+    "Sadler's Wells":"Rosebery Avenue, London EC1R 4TN, UK",
+    "Menier Chocolate Factory":"53 Southwark Street, London SE1 1RU, UK"
   },
   broadway:{
     "New Amsterdam Theatre":"214 W 42nd St, New York, NY 10036, USA",
@@ -77,14 +93,42 @@ mustReplace(
     "Nederlander Theatre":"208 W 41st St, New York, NY 10036, USA",
     "Lena Horne Theatre":"256 W 47th St, New York, NY 10036, USA",
     "Longacre Theatre":"220 W 48th St, New York, NY 10019, USA",
-    "Gershwin Theatre":"222 W 51st St, New York, NY 10019, USA"
+    "Gershwin Theatre":"222 W 51st St, New York, NY 10019, USA",
+    "Lyric Theatre":"214 W 43rd St, New York, NY 10036, USA",
+    "Music Box Theatre":"239 W 45th St, New York, NY 10036, USA",
+    "Winter Garden Theatre":"1634 Broadway, New York, NY 10019, USA",
+    "Imperial Theatre":"249 W 45th St, New York, NY 10036, USA",
+    "Majestic Theatre":"245 W 44th St, New York, NY 10036, USA",
+    "St. James Theatre":"246 W 44th St, New York, NY 10036, USA",
+    "Marquis Theatre":"210 W 46th St, New York, NY 10036, USA",
+    "Al Hirschfeld Theatre":"302 W 45th St, New York, NY 10036, USA",
+    "Shubert Theatre":"225 W 44th St, New York, NY 10036, USA",
+    "Booth Theatre":"222 W 45th St, New York, NY 10036, USA",
+    "Broadhurst Theatre":"235 W 44th St, New York, NY 10036, USA",
+    "Ethel Barrymore Theatre":"243 W 47th St, New York, NY 10036, USA",
+    "Lunt-Fontanne Theatre":"205 W 46th St, New York, NY 10036, USA",
+    "Vivian Beaumont Theater":"150 W 65th St, New York, NY 10023, USA",
+    "Hudson Theatre":"141 W 44th St, New York, NY 10036, USA",
+    "Brooks Atkinson Theatre":"256 W 47th St, New York, NY 10036, USA",
+    "Helen Hayes Theater":"240 W 44th St, New York, NY 10036, USA",
+    "Samuel J. Friedman Theatre":"261 W 47th St, New York, NY 10036, USA",
+    "Todd Haimes Theatre":"227 W 42nd St, New York, NY 10036, USA",
+    "James Earl Jones Theatre":"138 W 48th St, New York, NY 10036, USA",
+    "Jacobs Theatre":"242 W 45th St, New York, NY 10036, USA"
   }
 };
+// Live sources name venues loosely ("Kit Kat Club at the Playhouse", "Victoria Palace"), so the lookup
+// ignores case, accents, punctuation and the words the/theatre/theater, then falls back to containment.
+function venueKey(v){return Array.from(String(v||'').normalize('NFKD')).filter(ch=>{const c=ch.charCodeAt(0);return c<768||c>879}).join('').toLowerCase().replace(/&/g,' and ').replace(/\\b(the|theatre|theater)\\b/g,' ').replace(/[^a-z0-9]+/g,' ').trim()}
 function venueAddress(venue,meta={}){
   if(meta.address) return meta.address;
   const map=venueAddresses[state.city]||{};
   if(map[venue]) return map[venue];
-  const key=Object.keys(map).find(k=>k.toLowerCase()===String(venue||'').toLowerCase());
+  const want=venueKey(venue);
+  if(!want) return '';
+  const keys=Object.keys(map);
+  let key=keys.find(k=>venueKey(k)===want);
+  if(!key) key=keys.find(k=>{const kk=venueKey(k);return kk.length>=6&&(want.includes(kk)||kk.includes(want))});
   return key?map[key]:'';
 }
 function availableNames(){return new Set((current().schedule[state.active]||[]).map(([n])=>n))}`,
