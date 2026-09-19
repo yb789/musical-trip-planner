@@ -7,6 +7,7 @@ import fs from 'node:fs';
 const patches = [
   'patch-index.mjs',
   'patch-share-plan.mjs',
+  'patch-ticket-links-placement.mjs',
   'patch-calendar-v2.mjs',
   'patch-price-simple.mjs',
   'patch-no-past-dates.mjs',
