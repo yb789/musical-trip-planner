@@ -35,10 +35,6 @@
       <div id="pickerCalendar" class="picker-calendar"></div>
       <div id="pickerHint" class="small picker-hint">Click a start date, then an end date.</div>
       <div id="rangeParts" class="range-parts"></div>
-      <div class="split-controls">
-        <button id="splitTripBtn" type="button">+ Split trip into two parts</button>
-        <button id="removeSplitBtn" type="button" class="hidden">Use one continuous date range</button>
-      </div>
       <div id="dateCountNote" class="date-count-note"></div>
       <div id="dateError" class="error"></div>
       <div class="actions"><button id="continueBtn" class="primary">Continue to planner</button></div>
@@ -51,7 +47,7 @@
     <div class="modal">
       <h2>Long trip selected</h2>
       <p id="longTripText"></p>
-      <p class="small">The planner can continue. To keep each live search manageable, it will automatically search the schedule in blocks of up to 21 days. If you are not in the city for part of the period, go back and use <b>Split trip</b>.</p>
+      <p class="small">The planner can continue. To keep each live search manageable, it will automatically search the schedule in blocks of up to 21 days.</p>
       <div class="actions">
         <button id="longTripEdit" type="button">Go back and edit</button>
         <button id="longTripContinue" type="button" class="primary">Yes, continue</button>
@@ -149,14 +145,11 @@
       };
     });
 
-    $('splitTripBtn').classList.toggle('hidden', picker.split);
-    $('removeSplitBtn').classList.toggle('hidden', !picker.split);
-
     const count = pickerDayCount();
     const note = $('dateCountNote');
     if (count > 21) {
       note.className = 'date-count-note warning';
-      note.innerHTML = `You selected <b>${count} days</b>. That is more than 21 days. You can continue after confirming, or use <b>Split trip</b> if there is a break in your stay.`;
+      note.innerHTML = `You selected <b>${count} days</b>. That is more than 21 days. You can continue after confirming.`;
     } else if (count) {
       note.className = 'date-count-note note';
       note.textContent = `${count} day${count === 1 ? '' : 's'} selected.`;
@@ -185,23 +178,6 @@
       range.end = date;
     }
     picker.ranges[picker.activePart] = range;
-    renderPicker();
-  }
-
-  function addSplit() {
-    if (picker.split) return;
-    picker.split = true;
-    picker.ranges = [picker.ranges[0] || { start: '', end: '' }, { start: '', end: '' }];
-    picker.activePart = 1;
-    const first = picker.ranges[0];
-    if (first?.end) setMonthFromISO(addDays(first.end, 1));
-    renderPicker();
-  }
-
-  function removeSplit() {
-    picker.split = false;
-    picker.ranges = [picker.ranges[0] || { start: '', end: '' }];
-    picker.activePart = 0;
     renderPicker();
   }
 
@@ -432,8 +408,9 @@
   function openPickerFromState() {
     $('startCity').value = state.city;
     const ranges = currentSegments();
-    picker.ranges = ranges.length ? ranges.map(r => ({ ...r })) : [{ start: '', end: '' }];
-    picker.split = picker.ranges.length > 1;
+    // Split trips are no longer offered (removed 2026-09-19): an older two-part trip reopens as one continuous range.
+    picker.ranges = ranges.length ? [{ start: ranges[0].start, end: ranges[ranges.length - 1].end }] : [{ start: '', end: '' }];
+    picker.split = false;
     picker.activePart = 0;
     setMonthFromISO(picker.ranges[0]?.start || iso(new Date()));
     $('dateError').textContent = '';
@@ -453,8 +430,6 @@
     picker.month = new Date(m.getFullYear(), m.getMonth() + 1, 1, 12);
     renderPicker();
   };
-  $('splitTripBtn').onclick = addSplit;
-  $('removeSplitBtn').onclick = removeSplit;
   $('longTripEdit').onclick = () => {
     $('longTripOverlay').classList.add('hidden');
     pendingPlan = null;
