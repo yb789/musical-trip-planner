@@ -11,14 +11,23 @@
 .picker-day.in-range{background:#edf3f0;border-color:#c5d8d0}
 .picker-day.range-start,.picker-day.range-end{background:var(--green);border-color:var(--green);color:#fff}
 .picker-day.other-range{box-shadow:inset 0 0 0 2px #c9a88c}
-.picker-hint{margin:8px 0 10px}
+.picker-hint{display:flex;align-items:center;gap:10px;margin:14px 0 4px;padding:11px 14px;border-radius:12px;background:#f0f6f3;border:1px solid #c5d8d0;color:var(--green);font-size:17px;font-weight:700;line-height:1.3}
+.picker-hint small{font-weight:600;font-size:13px;color:#4f6f64}
+.picker-hint b{font-weight:900;text-decoration:underline;text-underline-offset:3px}
+.picker-step{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:800}
+.picker-hint.step-start .picker-step,.picker-hint.step-end .picker-step{animation:pickerPulse 1.4s ease-in-out infinite}
+.picker-hint.step-end{background:#fff7e6;border-color:#e5c681;color:#73520b}
+.picker-hint.step-end .picker-step{background:#c98a1b}
+.picker-hint.step-done{background:#edf7f2;border-color:#b7d7c8;color:#1f4b3f;font-weight:600;font-size:15px}
+.picker-hint.step-done .picker-step{animation:none}
+@keyframes pickerPulse{0%,100%{box-shadow:0 0 0 0 rgba(31,75,63,.45)}50%{box-shadow:0 0 0 8px rgba(31,75,63,0)}}
+@media(prefers-reduced-motion:reduce){.picker-step{animation:none!important}}
 .range-parts{display:flex;gap:8px;flex-wrap:wrap}
 .range-part{flex:1;min-width:180px;text-align:left;padding:10px 11px}
 .range-part.active{border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green);background:#f0f6f3}
 .range-part b{display:block;margin-bottom:3px}
-.split-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .date-count-note{margin-top:10px;border-radius:10px;padding:0;font-size:12px;line-height:1.4}
 .date-count-note.note{padding:9px 10px;background:#f4efe6;color:#5d5145}
 .date-count-note.warning{padding:9px 10px;background:#fff2d9;border:1px solid #e5c681;color:#73520b}
 .warning-overlay{z-index:10030}
-@media(max-width:560px){.picker-day,.picker-blank{min-height:40px}.date-picker-modal{padding:18px}.range-part{min-width:100%}}
+@media(max-width:560px){.picker-day,.picker-blank{min-height:40px}.date-picker-modal{padding:18px}.range-part{min-width:100%}.picker-hint{font-size:15px;padding:10px 12px}}
