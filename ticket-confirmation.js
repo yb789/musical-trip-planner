@@ -59,7 +59,7 @@
   function normalizeText(value){
     return String(value||'')
       .normalize('NFKD')
-      .replace(/[̀-ͯ]/g,'')
+      .replace(/\p{M}/gu,'')
       .toLowerCase()
       .replace(/&/g,' and ')
       .replace(/[^a-z0-9]+/g,' ')
@@ -239,7 +239,7 @@
   }
 
   function detectReference(text){
-    const normalized=String(text||'').replace(/[ \t]+/g,' ').replace(/\s+/g,' ');
+    const normalized=String(text||'').replace(/\s+/g,' ');
     const patterns=[
       /(?:booking|confirmation|reservation)\s*(?:number|no\.?|#|id|code|reference|ref)?\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\-]{3,39})/ig,
       /(?:order|purchase)\s*(?:number|no\.?|#|id|code|reference|ref)?\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\-]{3,39})/ig,
@@ -264,7 +264,7 @@
 
   // Seat detection: section (Stalls / Orchestra …), row and seat numbers, joined as "Stalls · Row K · Seats 12-13".
   function detectSeat(text){
-    const t=String(text||'').replace(/[ \t]+/g,' ').replace(/\s+/g,' ');
+    const t=String(text||'').replace(/\s+/g,' ');
     const section=(t.match(/\b(front stalls|rear stalls|stalls|dress circle|royal circle|grand circle|upper circle|balcony|orchestra|front mezzanine|rear mezzanine|mezzanine|gallery|slips|circle|loge|box\s?[A-Z0-9]{1,3})\b/i)||[])[1]||'';
     const row=(t.match(/\brow\s*(?:no\.?|number|#)?\s*[:\-]?\s*([A-Z]{1,2}\b|\d{1,2}\b)/i)||[])[1]||'';
     const seatMatch=t.match(/\bseats?\s*(?:no\.?|number|numbers|#)?\s*[:\-]?\s*([A-Z]{0,2}\s?\d{1,3}(?:\s*(?:-|–|,|&|and|to)\s*[A-Z]{0,2}\s?\d{1,3})*)/i);
