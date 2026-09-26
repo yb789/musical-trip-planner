@@ -128,12 +128,11 @@ async function scrapeLondonRange(start,end){
   const extra=await findMissingPerformances({dates,isFound,fetchText});
   for(const show of extra.shows)shows.set(normalizeTitle(show.name),show);
   for(const [d,list] of Object.entries(extra.performances))if(schedule[d])schedule[d].push(...list);
-  const fallbackDebug=extra.debug;
   for(const d of dates){const seen=new Set();schedule[d]=schedule[d].filter(([n,t])=>{const k=`${normalizeTitle(n)}|${t}`;if(seen.has(k))return false;seen.add(k);return true})}
   // Ticket links point at SeatPlan; the original London Box Office link is kept as sourceTicketUrl.
   const showList=await applySeatPlanLinks("london",[...shows.values()]);
   await enrichMissingShowInfo(showList,"LondonTheatre.co.uk");
-  return {shows:showList,schedule,sources:["LondonTheatre.co.uk (musical listings)","London Box Office (performance times)","SeatPlan (ticket links)"],fallbackDebug};
+  return {shows:showList,schedule,sources:["LondonTheatre.co.uk (musical listings)","London Box Office (performance times)","SeatPlan (ticket links)"]};
 }
 
 export default async function handler(req,res){
@@ -151,16 +150,14 @@ export default async function handler(req,res){
   const dayCount=Math.floor((end-start)/86400000)+1;
   if(dayCount>21)return json(res,400,{error:"Please select a date range of 21 days or fewer for live searching."});
   const key=`london|${iso(start)}|${iso(end)}`;
-  const debug=String(req.query.debug||"")==="1";
-  const shape=d=>{if(debug)return d;const {fallbackDebug,...rest}=d;return rest};
   const cached=cache.get(key);
-  if(cached&&Date.now()-cached.at<CACHE_TTL_MS)return json(res,200,shape(cached.data));
+  if(cached&&Date.now()-cached.at<CACHE_TTL_MS)return json(res,200,cached.data);
 
   try{
     const result=await scrapeLondonRange(start,end);
     const data={city:"london",start:iso(start),end:iso(end),refreshedAt:new Date().toISOString(),...result};
     cache.set(key,{at:Date.now(),data});
-    return json(res,200,shape(data));
+    return json(res,200,data);
   }catch(err){
     console.error("London schedule failed:",err);
     return json(res,502,{error:"The London schedule source could not be read right now.",detail:String(err?.message||err)});
