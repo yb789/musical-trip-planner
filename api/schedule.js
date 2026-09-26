@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import broadwayHandler from "./broadway2.js";
 import { applySeatPlanLinks, enrichMissingShowInfo } from "./seatplan.js";
+import { findMissingPerformances } from "../lib/lbo-calendar.js";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const cache = new Map();
@@ -20,7 +21,7 @@ function parseISO(s){
 function iso(d){return d.toISOString().slice(0,10)}
 function addDays(d,n){const x=new Date(d);x.setUTCDate(x.getUTCDate()+n);return x}
 function rangeDates(start,end){const out=[];let d=new Date(start);while(d<=end&&out.length<32){out.push(iso(d));d=addDays(d,1)}return out}
-function normalizeTitle(s){return String(s||"").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/&/g,"and").replace(/^the\s+/,"").replace(/[^a-z0-9]+/g,"").trim()}
+function normalizeTitle(s){return String(s||"").toLowerCase().normalize("NFKD").replace(/\p{M}/gu,"").replace(/&/g,"and").replace(/^the\s+/,"").replace(/[^a-z0-9]+/g,"").trim()}
 function absolute(base,href){if(!href)return"";try{return new URL(href,base).href}catch{return""}}
 function normalizeTime(raw){const m=String(raw||"").trim().match(/(\d{1,2}):(\d{2})\s*(am|pm)/i);if(!m)return null;let h=Number(m[1]),min=m[2],ap=m[3].toLowerCase();if(ap==="pm"&&h!==12)h+=12;if(ap==="am"&&h===12)h=0;return `${String(h).padStart(2,"0")}:${min}`}
 function extractTimes(text){const matches=String(text||"").match(/\b\d{1,2}:\d{2}\s*(?:AM|PM)\b/gi)||[];return [...new Set(matches.map(normalizeTime).filter(Boolean))]}
@@ -120,6 +121,13 @@ async function scrapeLondonRange(start,end){
   const results=[];
   for(let i=0;i<dates.length;i+=4){const batch=await Promise.all(dates.slice(i,i+4).map(scrapeLondonDay));results.push(...batch)}
   for(const r of results){schedule[r.date]=r.performances;r.shows.forEach(show=>shows.set(normalizeTitle(show.name),show))}
+  // Fallback: musicals LBO sells but leaves off its day pages (e.g. Rent, Sept 2026).
+  // Same tolerant matching as the day pages, so "Six" vs "SIX the Musical" is not a duplicate.
+  const foundKeys=[...shows.values()].map(s=>matchKey(s.name));
+  const isFound=name=>{const k=matchKey(name);return foundKeys.some(f=>f===k||(f.length>5&&k.length>5&&(f.includes(k)||k.includes(f))))};
+  const extra=await findMissingPerformances({dates,isFound,fetchText});
+  for(const show of extra.shows)shows.set(normalizeTitle(show.name),show);
+  for(const [d,list] of Object.entries(extra.performances))if(schedule[d])schedule[d].push(...list);
   for(const d of dates){const seen=new Set();schedule[d]=schedule[d].filter(([n,t])=>{const k=`${normalizeTitle(n)}|${t}`;if(seen.has(k))return false;seen.add(k);return true})}
   // Ticket links point at SeatPlan; the original London Box Office link is kept as sourceTicketUrl.
   const showList=await applySeatPlanLinks("london",[...shows.values()]);
