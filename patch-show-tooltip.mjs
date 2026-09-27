@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 
 // Hover tooltip: when the pointer rests on a musical's name (sidebar list, performance
-// cards, the day summary, or the calendar) a card shows the show's poster/logo and a
-// short plot description. Both come from the SeatPlan listing via the schedule API
-// (show.image / show.description); shows without data simply get no tooltip.
+// cards, the day summary, or the calendar) a small card shows the first lines of our own
+// catalogue description (from /api/shows via window.showInfoLookup, defined by
+// patch-show-info.mjs). No third-party synopsis or poster images are shown. Shows without a
+// catalogue entry simply get no tooltip; the (i) button has the full details.
 
 const file='index.html';
 let s=fs.readFileSync(file,'utf8');
@@ -65,19 +66,20 @@ const js=`
   tip.id='showTip';
   document.body.appendChild(tip);
   let currentName='';
-  function metaFor(name){
-    try{return showMeta(name)||{}}catch{return {}}
+  function summary(text){
+    const t=String(text||'');
+    if(t.length<=190)return t;
+    const cut=t.lastIndexOf('. ',190);
+    return cut>80?t.slice(0,cut+1):t.slice(0,187).replace(/\\s+\\S*$/,'')+'…';
   }
   function build(name){
-    const m=metaFor(name);
+    const entry=typeof window.showInfoLookup==='function'?window.showInfoLookup(name):null;
+    if(!entry||!entry.description)return false;
     const title=typeof cleanShowTitle==='function'?cleanShowTitle(name):name;
-    if(!m.image&&!m.description)return false;
-    const venue=m.venue&&!/^(London|Broadway, New York|London · West End|New York · Broadway)$/i.test(m.venue)?m.venue:'';
-    tip.innerHTML=(m.image?'<img alt="" src="'+esc(m.image)+'">':'')
-      +'<div class="tip-body"><div class="tip-title">'+esc(title)+'</div>'
-      +(m.description?'<div class="tip-desc">'+esc(m.description)+'</div>':'')
-      +(venue?'<div class="tip-venue">🎭 '+esc(venue)+'</div>':'')
-      +'<div class="tip-credit">Image and synopsis via '+esc(m.infoSource||'SeatPlan')+'</div></div>';
+    tip.innerHTML='<div class="tip-body"><div class="tip-title">'+esc(title)+'</div>'
+      +'<div class="tip-desc">'+esc(summary(entry.description))+'</div>'
+      +(entry.venue?'<div class="tip-venue">🎭 '+esc(entry.venue)+'</div>':'')
+      +'<div class="tip-credit">Click the (i) for running time, age guidance and more</div></div>';
     return true;
   }
   function place(x,y){
@@ -120,4 +122,4 @@ const js=`
 if(!s.includes("tip.id='showTip'")) s=s.replace('</body>',js+'</body>');
 
 fs.writeFileSync(file,s);
-console.log('Musical hover tooltip (poster + synopsis) applied.');
+console.log('Musical hover tooltip (catalogue summary) applied.');

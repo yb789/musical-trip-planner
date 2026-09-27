@@ -3,7 +3,8 @@ import fs from 'node:fs';
 // Show info panel: an (i) button next to each musical's name (sidebar list and performance
 // cards) opens a panel with our own catalogue entry from /api/shows: description, style tags,
 // running time, age guidance, content notes and, for limited runs, the final performance.
-// Works on touch screens (the hover tooltip does not). Must run after patch-show-tooltip.mjs.
+// Works on touch screens (the hover tooltip does not). Also exposes window.showInfoLookup(name),
+// which the hover tooltip uses. Must run after patch-show-tooltip.mjs.
 
 const file = 'index.html';
 let s = fs.readFileSync(file, 'utf8');
@@ -68,6 +69,13 @@ const js = `
     if(!cache[city])cache[city]=fetch('/api/shows?city='+encodeURIComponent(city)).then(r=>r.ok?r.json():{shows:[]}).then(d=>d.shows||[]).catch(()=>{delete cache[city];return []});
     return cache[city];
   }
+  const loaded={};
+  function currentCity(){return (typeof state!=='undefined'&&state&&state.city)||'london'}
+  function lookup(name){
+    const city=currentCity();
+    if(!loaded[city]){catalogue(city).then(list=>{if(list.length)loaded[city]=list});return null}
+    return find(loaded[city],name);
+  }
   function find(shows,name){
     const k=key(name);
     let hit=shows.find(x=>[x.name].concat(x.aliases||[]).some(a=>key(a)===k));
@@ -109,7 +117,7 @@ const js = `
     dlg.querySelectorAll('.si-close,.si-close-2').forEach(b=>b.addEventListener('click',()=>dlg.close()));
   }
   async function open(name){
-    const city=(typeof state!=='undefined'&&state&&state.city)||'london';
+    const city=currentCity();
     render(name,null);
     dlg.querySelector('.si-desc').textContent='Loading…';
     if(!dlg.open)dlg.showModal();
@@ -125,6 +133,8 @@ const js = `
     open(b.dataset.info||'');
   },true);
   window.openShowInfo=open;
+  window.showInfoLookup=lookup;
+  document.addEventListener('mouseover',()=>{const c=currentCity();if(!loaded[c])lookup('')},{passive:true});
 })();
 </script>
 `;
