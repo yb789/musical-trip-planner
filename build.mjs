@@ -15,7 +15,8 @@ const patches = [
   'patch-ticket-confirmation.mjs',
   'patch-seatplan-link.mjs',
   'patch-show-tooltip.mjs',
-  'patch-show-helper.mjs'
+  'patch-show-helper.mjs',
+  'patch-pdf-export.mjs'
 ];
 
 for (const patch of patches) {
