@@ -62,6 +62,11 @@
     if (!k) return null;
     return guide(city).find(g => g._keys.includes(k)) || guide(city).find(g => g._keys.some(x => x.length > 5 && k.length > 5 && (x.includes(k) || k.includes(x)))) || null;
   }
+  // Used by the planner's hover tooltip to show our own description of a show.
+  window.mhGuideEntry = name => {
+    const city = (typeof state !== 'undefined' && CITIES.includes(state.city)) ? state.city : hs.city;
+    return entryForName(city, name) || entryForName(city === 'london' ? 'broadway' : 'london', name);
+  };
   function liveKeys(city) {
     try {
       if (!state.start || !state.end) return null;
@@ -140,6 +145,7 @@
         <button type="button" class="mh-card" data-act="know"><span class="mh-icon">${ICON_CAL}</span><span class="mh-card-title">I know what I want</span><span class="mh-card-text">Pick your dates and choose a matinee and an evening show for each day.</span><span class="mh-card-cta">Go to the planner →</span></button>
         <button type="button" class="mh-card mh-feature" data-act="help"><span class="mh-card-top"><span class="mh-icon">${ICON_SPARK}</span><span class="mh-chip">About 1 minute</span></span><span class="mh-card-title">Help me choose</span><span class="mh-card-text">Not sure what to see? Answer 4 quick questions and get a shortlist of shows that suit you.</span><span class="mh-card-cta">Start the helper →</span></button>
       </div>
+      <nav class="mh-browse" aria-label="Browse"><span>Or explore first:</span> <a href="/london/">West End musicals</a> <a href="/new-york/">Broadway musicals</a> <a href="/guides/">Theatre trip guides</a></nav>
       ${shortN ? `<div class="mh-note mh-green"><div>You have a shortlist of <b>${shortN} ${cityName(hs.city)} show${shortN === 1 ? '' : 's'}</b> from the helper.</div><button type="button" class="mh-btn" data-act="showresults">See my shortlist</button></div>` : ''}
       ${saved ? `<div class="mh-note"><div><b>Welcome back.</b> This browser has ${saved} chosen performance${saved === 1 ? '' : 's'} saved from a previous visit.</div><button type="button" class="mh-btn primary" data-act="know">Continue your plan</button></div>` : ''}
     </div>`;
