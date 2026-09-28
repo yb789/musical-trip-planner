@@ -6,6 +6,10 @@
       "includeFiles": "node_modules/**/*.wasm",
       "memory": 1024,
       "maxDuration": 15
+    },
+    "api/pages.js": {
+      "includeFiles": "data/**",
+      "maxDuration": 15
     }
   },
   "rewrites": [
@@ -16,6 +20,54 @@
     {
       "source": "/plan/:code",
       "destination": "/api/plan-page?code=:code"
+    },
+    {
+      "source": "/london",
+      "destination": "/api/pages?type=city&city=london"
+    },
+    {
+      "source": "/london/",
+      "destination": "/api/pages?type=city&city=london"
+    },
+    {
+      "source": "/london/:slug",
+      "destination": "/api/pages?type=show&city=london&slug=:slug"
+    },
+    {
+      "source": "/london/:slug/",
+      "destination": "/api/pages?type=show&city=london&slug=:slug"
+    },
+    {
+      "source": "/new-york",
+      "destination": "/api/pages?type=city&city=new-york"
+    },
+    {
+      "source": "/new-york/",
+      "destination": "/api/pages?type=city&city=new-york"
+    },
+    {
+      "source": "/new-york/:slug",
+      "destination": "/api/pages?type=show&city=new-york&slug=:slug"
+    },
+    {
+      "source": "/new-york/:slug/",
+      "destination": "/api/pages?type=show&city=new-york&slug=:slug"
+    },
+    {
+      "source": "/guides",
+      "destination": "/api/pages?type=guide"
+    },
+    {
+      "source": "/guides/",
+      "destination": "/api/pages?type=guide"
+    },
+    {
+      "source": "/guides/:slug",
+      "destination": "/api/pages?type=guide&slug=:slug"
+    },
+    {
+      "source": "/guides/:slug/",
+      "destination": "/api/pages?type=guide&slug=:slug"
     }
   ]
 }

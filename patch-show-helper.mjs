@@ -19,6 +19,9 @@ const data = JSON.stringify(slim).replace(/</g, '\\u003c');
 s = s.replace(/\s*<style id=["']show-helper-style["'][\s\S]*?<\/style>\s*/gi, '\n');
 s = s.replace(/\s*<script id=["']show-helper-flag["'][\s\S]*?<\/script>\s*/gi, '\n');
 s = s.replace(/\s*<script id=["']show-helper-script["'][\s\S]*?<\/script>\s*/gi, '\n');
+// Crawlable links from the planner's intro to the show pages and guides.
+s = s.replace(/\s*<p id="mh-browse"[\s\S]*?<\/p>/, '');
+s = s.replace(/(<section class="intro panel">[\s\S]*?)(<\/section>)/, '$1<p id="mh-browse" class="small">Browse: <a href="/london/">West End musicals</a> · <a href="/new-york/">Broadway musicals</a> · <a href="/guides/">Theatre trip guides</a></p>$2');
 s = s.replace('</head>', `<script id="show-helper-flag">window.MH_SHARED_PLAN=/[?&]plan=/.test(location.search)</script>\n<style id="show-helper-style">\n${css}\n</style>\n</head>`);
 s = s.replace('</body>', `<script id="show-helper-script">\nwindow.SHOW_GUIDE=${data};\n${js}\n</script>\n</body>`);
 

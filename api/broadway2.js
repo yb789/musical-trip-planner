@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio";
-import { applySeatPlanLinks, enrichMissingShowInfo } from "./seatplan.js";
+import { applySeatPlanLinks } from "./seatplan.js";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const cache = new Map();
@@ -28,7 +28,7 @@ function cleanShowTitle(s){
 }
 function normalize(s){
   return cleanShowTitle(s).toLowerCase().normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/\p{M}/gu,"")
     .replace(/&/g,"and")
     .replace(/\b(the|a|an|new|musical)\b/g," ")
     .replace(/[^a-z0-9]+/g,"")
@@ -182,7 +182,6 @@ async function scrape(start,end){
   if(!shows.length) throw new Error('Broadway.com full schedule pages returned no performances for the selected range');
   // Ticket links point at SeatPlan; the Broadway.com show page stays available as infoUrl / sourceTicketUrl.
   await applySeatPlanLinks('broadway',shows);
-  await enrichMissingShowInfo(shows,'Broadway.com');
   return {shows,schedule,sources:['Broadway.com full show schedule pages','SeatPlan (ticket links)']};
 }
 

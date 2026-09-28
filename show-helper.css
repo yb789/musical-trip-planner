@@ -92,3 +92,7 @@ body.mh-open{overflow:hidden}
 }
 @media (min-width:761px) and (max-width:1020px){.mh-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (prefers-reduced-motion:reduce){.mh-bar span{transition:none}}
+
+.mh-browse{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px 10px;font-size:14px;color:var(--muted)}
+.mh-browse a{display:inline-block;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-weight:700;text-decoration:none}
+.mh-browse a:hover{border-color:#a99b8a}

@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 
 // Hover tooltip: when the pointer rests on a musical's name (sidebar list, performance
-// cards, the day summary, or the calendar) a card shows the show's poster/logo and a
-// short plot description. Both come from the SeatPlan listing via the schedule API
-// (show.image / show.description); shows without data simply get no tooltip.
+// cards, the day summary, or the calendar) a card shows our own short description of the
+// show from data/shows-*.json (via window.mhGuideEntry, defined in show-helper.js).
+// No images or synopses are taken from SeatPlan or other listing sites.
+// Shows without an entry simply get no tooltip.
 
 const file='index.html';
 let s=fs.readFileSync(file,'utf8');
@@ -47,12 +48,11 @@ const css=`
 [data-show]{cursor:help}
 #showTip{position:fixed;z-index:20000;width:300px;max-width:calc(100vw - 24px);background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 50px rgba(30,25,20,.22);padding:0;overflow:hidden;pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .12s ease,transform .12s ease}
 #showTip.on{opacity:1;transform:none}
-#showTip img{display:block;width:100%;height:150px;object-fit:cover;background:#eee8df}
 #showTip .tip-body{padding:11px 13px 13px}
 #showTip .tip-title{font:700 15px Georgia,serif;margin:0 0 5px;color:var(--ink)}
 #showTip .tip-desc{font-size:12px;line-height:1.45;color:#4a453e}
 #showTip .tip-venue{font-size:11px;color:var(--muted);margin-top:6px}
-#showTip .tip-credit{font-size:9px;color:var(--muted);margin-top:7px}
+#showTip .tip-meta{font-size:11px;color:var(--muted);margin-top:6px}
 @media(hover:none){#showTip{display:none!important}}
 `;
 if(!s.includes('#showTip{')) s=s.replace('</style>',css+'</style>');
@@ -69,15 +69,17 @@ const js=`
     try{return showMeta(name)||{}}catch{return {}}
   }
   function build(name){
+    const g=typeof window.mhGuideEntry==='function'?window.mhGuideEntry(name):null;
+    if(!g||!g.blurb)return false;
     const m=metaFor(name);
-    const title=typeof cleanShowTitle==='function'?cleanShowTitle(name):name;
-    if(!m.image&&!m.description)return false;
-    const venue=m.venue&&!/^(London|Broadway, New York|London · West End|New York · Broadway)$/i.test(m.venue)?m.venue:'';
-    tip.innerHTML=(m.image?'<img alt="" src="'+esc(m.image)+'">':'')
-      +'<div class="tip-body"><div class="tip-title">'+esc(title)+'</div>'
-      +(m.description?'<div class="tip-desc">'+esc(m.description)+'</div>':'')
+    const title=g.title||(typeof cleanShowTitle==='function'?cleanShowTitle(name):name);
+    const liveVenue=m.venue&&!/^(London|Broadway, New York|London · West End|New York · Broadway)$/i.test(m.venue)?m.venue:'';
+    const venue=g.venue||liveVenue;
+    tip.innerHTML='<div class="tip-body"><div class="tip-title">'+esc(title)+'</div>'
+      +'<div class="tip-desc">'+esc(g.blurb)+'</div>'
+      +(g.runtime?'<div class="tip-meta">⏱ '+esc(g.runtime)+'</div>':'')
       +(venue?'<div class="tip-venue">🎭 '+esc(venue)+'</div>':'')
-      +'<div class="tip-credit">Image and synopsis via '+esc(m.infoSource||'SeatPlan')+'</div></div>';
+      +'</div>';
     return true;
   }
   function place(x,y){
@@ -120,4 +122,4 @@ const js=`
 if(!s.includes("tip.id='showTip'")) s=s.replace('</body>',js+'</body>');
 
 fs.writeFileSync(file,s);
-console.log('Musical hover tooltip (poster + synopsis) applied.');
+console.log('Musical hover tooltip (own descriptions) applied.');
