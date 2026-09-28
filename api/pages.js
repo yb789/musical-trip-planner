@@ -16,9 +16,12 @@ export default async function handler(req, res) {
     if (type === "city" && CITIES[city]) html = renderCity(city);
     else if (type === "show" && CITIES[city] && /^[a-z0-9-]{1,80}$/.test(slug)) {
       const meta = {};
-      html = await renderShow(city, slug, { meta });
+      const check = q.check === "1";
+      html = await renderShow(city, slug, { meta, check });
       // Cache pages with live times for 6 hours; retry sooner if Ticketmaster was unavailable.
-      cache = meta.tmOk ? "public, max-age=300, s-maxage=21600, stale-while-revalidate=86400" : "public, max-age=60, s-maxage=600";
+      // ?check=1 shows Ticketmaster diagnostics and is never cached or indexed.
+      cache = check ? "no-store" : meta.tmOk ? "public, max-age=300, s-maxage=21600, stale-while-revalidate=86400" : "public, max-age=60, s-maxage=600";
+      if (check) res.setHeader("X-Robots-Tag", "noindex");
     }
     else if (type === "guide" && !slug) html = renderGuidesIndex();
     else if (type === "guide" && /^[a-z0-9-]{1,80}$/.test(slug)) html = renderGuide(slug);
