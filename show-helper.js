@@ -398,6 +398,18 @@
     // Shared plans open straight into the planner.
     hideOverlay();
   } else {
+    // Deep links from the show pages: /?city=london&show=hamilton#/plan adds the show to the shortlist
+    // and opens the planner for that city.
+    const params = new URLSearchParams(location.search);
+    const linkCity = params.get('city');
+    if (CITIES.includes(linkCity)) {
+      hs.city = linkCity;
+      const linkShow = params.get('show');
+      if (linkShow && byId(linkCity, linkShow) && !hs.short[linkCity].includes(linkShow)) hs.short[linkCity].push(linkShow);
+      persist();
+      setPlannerCity(linkCity);
+      history.replaceState(null, '', location.pathname + (location.hash || '#/plan'));
+    }
     if (!location.hash) history.replaceState(null, '', location.pathname + location.search + '#/start');
     route();
   }
