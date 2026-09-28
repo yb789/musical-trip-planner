@@ -27,4 +27,6 @@ for (const patch of patches) {
 fs.mkdirSync('public', { recursive: true });
 fs.copyFileSync('index.html', 'public/index.html');
 for (const f of fs.readdirSync('static')) fs.copyFileSync(`static/${f}`, `public/${f}`);
+// Replaces the static sitemap with one listing every show page and guide.
+execFileSync(process.execPath, ['build-sitemap.mjs'], { stdio: 'inherit' });
 console.log('\nBuild complete: public/index.html written.');
