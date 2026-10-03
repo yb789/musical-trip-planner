@@ -68,6 +68,14 @@
     {
       "source": "/guides/:slug/",
       "destination": "/api/pages?type=guide&slug=:slug"
+    },
+    {
+      "source": "/about",
+      "destination": "/api/pages?type=about"
+    },
+    {
+      "source": "/about/",
+      "destination": "/api/pages?type=about"
     }
   ]
 }

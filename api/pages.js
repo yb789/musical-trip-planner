@@ -1,9 +1,10 @@
-import { CITIES, renderShow, renderCity, renderGuide, renderGuidesIndex, notFound } from "../lib/site-pages.js";
+import { CITIES, renderShow, renderCity, renderGuide, renderGuidesIndex, renderAbout, notFound } from "../lib/site-pages.js";
 
 // Indexable pages, reached through vercel.json rewrites:
 //   /london/  /new-york/            -> ?type=city&city=…
 //   /london/:slug/  /new-york/:slug/ -> ?type=show&city=…&slug=…
 //   /guides/  /guides/:slug/         -> ?type=guide&slug=…
+//   /about/                          -> ?type=about
 export default async function handler(req, res) {
   const q = req.query || {};
   const type = String(q.type || "");
@@ -23,6 +24,7 @@ export default async function handler(req, res) {
       cache = check ? "no-store" : meta.tmOk ? "public, max-age=300, s-maxage=21600, stale-while-revalidate=86400" : "public, max-age=60, s-maxage=600";
       if (check) res.setHeader("X-Robots-Tag", "noindex");
     }
+    else if (type === "about") html = renderAbout();
     else if (type === "guide" && !slug) html = renderGuidesIndex();
     else if (type === "guide" && /^[a-z0-9-]{1,80}$/.test(slug)) html = renderGuide(slug);
     if (!html) {
