@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 import broadwayHandler from "./broadway2.js";
-import { applySeatPlanLinks } from "./seatplan.js";
+import { applySeatPlanLinks } from "../lib/seatplan.js";
 import { findMissingPerformances } from "../lib/lbo-calendar.js";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;

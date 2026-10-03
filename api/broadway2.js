@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio";
-import { applySeatPlanLinks } from "./seatplan.js";
+import { applySeatPlanLinks } from "../lib/seatplan.js";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const cache = new Map();
