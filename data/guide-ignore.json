@@ -1,0 +1,14 @@
+{
+  "_note": "Names the weekly guide check should not report as missing (deliberately left out of the guide). Compared after normalising (case, punctuation, 'the musical').",
+  "london": [
+    "ABBA Voyage",
+    "Come Alive! The Greatest Showman Circus Spectacular",
+    "Showstopper! The Improvised Musical",
+    "The Last Ship",
+    "I'm Every Woman"
+  ],
+  "broadway": [
+    "Little Shop of Horrors",
+    "Masquerade"
+  ]
+}
