@@ -1,14 +1,23 @@
 {
-  "_note": "Names the weekly guide check should not report as missing (deliberately left out of the guide). Compared after normalising (case, punctuation, 'the musical').",
+  "_note": "Names the weekly guide check should not report as missing. Plain strings are ignored permanently; {\"name\": ..., \"until\": \"YYYY-MM-DD\"} is ignored until that date (e.g. a postponed show that may return).",
   "london": [
     "ABBA Voyage",
     "Come Alive! The Greatest Showman Circus Spectacular",
     "Showstopper! The Improvised Musical",
     "The Last Ship",
-    "I'm Every Woman"
+    "I'm Every Woman",
+    "Bill Bailey: Vaudevillean",
+    "Mamma Mia! The Party",
+    "Love Never Dies In Concert",
+    "A Homo Alone 2: Yikes We Did It Again!",
+    "Wild About You",
+    {
+      "name": "Burlesque",
+      "until": "2026-12-31"
+    }
   ],
   "broadway": [
-    "Little Shop of Horrors",
-    "Masquerade"
+    "Billy Crystal: 860",
+    "Christmas Spectacular Starring The Radio City Rockettes"
   ]
 }
