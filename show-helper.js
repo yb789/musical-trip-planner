@@ -142,7 +142,7 @@
         ${CITIES.map(c => `<button type="button" data-act="city" data-city="${c}" aria-pressed="${hs.city === c}">${c === 'london' ? 'London · West End' : 'New York · Broadway'}</button>`).join('')}
       </div>
       <div class="mh-paths">
-        <button type="button" class="mh-card" data-act="know"><span class="mh-icon">${ICON_CAL}</span><span class="mh-card-title">I know what I want</span><span class="mh-card-text">Pick your dates and choose a matinee and an evening show for each day.</span><span class="mh-card-cta">Go to the planner →</span></button>
+        <button type="button" class="mh-card" data-act="know"><span class="mh-icon">${ICON_CAL}</span><span class="mh-card-title">I know my Musicals take me to the planner</span><span class="mh-card-text">Pick your dates and choose a matinee and an evening show for each day.</span><span class="mh-card-cta">Go to the planner →</span></button>
         <button type="button" class="mh-card mh-feature" data-act="help"><span class="mh-card-top"><span class="mh-icon">${ICON_SPARK}</span><span class="mh-chip">About 1 minute</span></span><span class="mh-card-title">Help me choose</span><span class="mh-card-text">Not sure what to see? Answer 4 quick questions and get a shortlist of shows that suit you.</span><span class="mh-card-cta">Start the helper →</span></button>
       </div>
       <nav class="mh-browse" aria-label="Browse"><span>Or explore first:</span> <a href="/london/">West End musicals</a> <a href="/new-york/">Broadway musicals</a> <a href="/guides/">Theatre trip guides</a></nav>
