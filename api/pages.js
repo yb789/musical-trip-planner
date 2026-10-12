@@ -1,7 +1,9 @@
-import { CITIES, renderShow, renderCity, renderGuide, renderGuidesIndex, renderAbout, notFound } from "../lib/site-pages.js";
+import { CITIES, renderShow, renderCity, renderMatinees, renderGuide, renderGuidesIndex, renderAbout, notFound } from "../lib/site-pages.js";
+import { loadSchedule } from "../lib/schedule-data.js";
 
 // Indexable pages, reached through vercel.json rewrites:
 //   /london/  /new-york/            -> ?type=city&city=…
+//   /london/matinees/ /new-york/matinees/ -> ?type=matinees&city=…
 //   /london/:slug/  /new-york/:slug/ -> ?type=show&city=…&slug=…
 //   /guides/  /guides/:slug/         -> ?type=guide&slug=…
 //   /about/                          -> ?type=about
@@ -15,6 +17,19 @@ export default async function handler(req, res) {
     let html = null;
     let cache = "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800";
     if (type === "city" && CITIES[city]) html = renderCity(city);
+    else if (type === "matinees" && CITIES[city]) {
+      // Live planner schedule for the next 7 days. Cached for 12 hours at the edge and served stale
+      // for up to a week while it refreshes, so visitors rarely wait for the scrape.
+      try {
+        html = renderMatinees(city, await loadSchedule(city, new Date()));
+        cache = "public, max-age=600, s-maxage=43200, stale-while-revalidate=604800";
+      } catch (err) {
+        console.error("matinees page failed", city, err?.message || err);
+        res.setHeader("Cache-Control", "no-store");
+        res.setHeader("Retry-After", "600");
+        return res.status(503).send('<!doctype html><meta charset=utf-8><title>Temporarily unavailable</title><p style="font-family:sans-serif;padding:24px">The live schedule could not be read right now. Please try again in a few minutes, or <a href="/#/plan">open the planner</a>.</p>');
+      }
+    }
     else if (type === "show" && CITIES[city] && /^[a-z0-9-]{1,80}$/.test(slug)) {
       const meta = {};
       const check = q.check === "1";
