@@ -9,7 +9,7 @@
     },
     "api/pages.js": {
       "includeFiles": "data/**",
-      "maxDuration": 15
+      "maxDuration": 60
     },
     "api/guide-check.js": {
       "includeFiles": "data/**",
@@ -34,6 +34,14 @@
       "destination": "/api/pages?type=city&city=london"
     },
     {
+      "source": "/london/matinees",
+      "destination": "/api/pages?type=matinees&city=london"
+    },
+    {
+      "source": "/london/matinees/",
+      "destination": "/api/pages?type=matinees&city=london"
+    },
+    {
       "source": "/london/:slug",
       "destination": "/api/pages?type=show&city=london&slug=:slug"
     },
@@ -48,6 +56,14 @@
     {
       "source": "/new-york/",
       "destination": "/api/pages?type=city&city=new-york"
+    },
+    {
+      "source": "/new-york/matinees",
+      "destination": "/api/pages?type=matinees&city=new-york"
+    },
+    {
+      "source": "/new-york/matinees/",
+      "destination": "/api/pages?type=matinees&city=new-york"
     },
     {
       "source": "/new-york/:slug",
