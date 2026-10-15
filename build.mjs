@@ -14,6 +14,7 @@ const patches = [
   'patch-date-calendar.mjs',
   'patch-ticket-confirmation.mjs',
   'patch-seatplan-link.mjs',
+  'patch-affiliate-links.mjs',
   'patch-show-tooltip.mjs',
   'patch-show-helper.mjs',
   'patch-pdf-export.mjs',
