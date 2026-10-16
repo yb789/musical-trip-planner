@@ -18,7 +18,8 @@ const patches = [
   'patch-show-tooltip.mjs',
   'patch-show-helper.mjs',
   'patch-pdf-export.mjs',
-  'patch-about-links.mjs'
+  'patch-about-links.mjs',
+  'patch-finish-bar.mjs'
 ];
 
 for (const patch of patches) {
