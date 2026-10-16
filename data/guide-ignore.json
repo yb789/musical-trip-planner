@@ -1,12 +1,10 @@
 {
   "_note": "Names the weekly guide check should not report as missing. Plain strings are ignored permanently; {\"name\": ..., \"until\": \"YYYY-MM-DD\"} is ignored until that date (e.g. a postponed show that may return).",
   "london": [
-    "ABBA Voyage",
     "Showstopper! The Improvised Musical",
     "The Last Ship",
     "I'm Every Woman",
     "Bill Bailey: Vaudevillean",
-    "Mamma Mia! The Party",
     "Love Never Dies In Concert",
     "A Homo Alone 2: Yikes We Did It Again!",
     "Wild About You",
@@ -15,7 +13,6 @@
       "until": "2026-12-31"
     },
     "Caissie Levy",
-    "Harry Potter and the Cursed Child",
     "West End Musical Christmas (2026)"
   ],
   "broadway": [
