@@ -1,36 +1,30 @@
-# Musical Trip Planner — Live Schedule Version
+# Musical Trip Planner
 
-This version performs a fresh schedule lookup whenever the user confirms a date range, changes the dates, or switches between London and Broadway.
+Plan a West End or Broadway trip: pick dates, see which musicals play when, choose one matinee and one evening per day, then export (Excel/PDF) or share a link. Live at **https://musicaltripplanner.com**.
 
-## Why this cannot run on GitHub Pages alone
+## Where the documentation lives
 
-GitHub Pages only serves static files. The live planner needs a small server-side `/api/schedule` function because theatre websites generally do not allow a browser page on another domain to read their HTML directly (CORS), and the HTML must be parsed into show/date/time data.
+The repository deliberately carries no handoff document. The up-to-date project notes, decisions and release write-ups live outside the code:
 
-You can still keep the project on GitHub. Deploy that GitHub repository with Vercel.
+- **Project notes (Claude project "musical planner")** — release notes, security review, revenue and exposure plans, data reviews.
+- **Obsidian vault (Dropbox)** — `general/apps/Musical Trip Planner - AI Handoff.md`, the long-form handoff.
 
-## Deploy with GitHub + Vercel
+The two `AI_HANDOFF*.md` files that used to sit here were snapshots from September 2026 and had drifted from the code; they were removed on 16 Oct 2026. Use `git log` and the pull-request descriptions for the history of each change.
 
-1. Create or update your GitHub repository.
-2. Upload all files in this folder, preserving the `api` folder.
-3. Go to https://vercel.com and sign in.
-4. Choose **Add New → Project** and import your GitHub repository.
-5. Framework preset: **Other**.
-6. No environment variables are required.
-7. Click **Deploy**.
-8. Use the Vercel URL as the live website.
+## Layout
 
-## Live sources
+| Path | What it is |
+|---|---|
+| `index.html`, `*.js`, `*.css` | Source of the single-page planner. **Do not edit `public/`** — it is generated. |
+| `patch-*.mjs`, `build.mjs` | Build-time patches assembled into `public/index.html` (`node build.mjs`). Order matters; each patch asserts the text it replaces. |
+| `api/` | Vercel serverless functions: `schedule` (live London/Broadway timetables), `plan` + `plan-page` (shared itineraries, Neon Postgres), `pages` (show, city, matinee, guide and about pages), `og` (social images), `tm-link` (Ticketmaster affiliate links), `feedback`, `guide-check` (weekly cron). |
+| `lib/` | Shared server code: scrapers, SeatPlan matching, page renderers, plan storage. |
+| `data/shows-*.json` | The show guide: titles, venues, dates, runtime, blurbs, tags. |
+| `static/` | Files copied to `public/` as-is (robots, sitemap, manifest, favicon). |
+| `vercel.json` | Rewrites for the pretty URLs, security headers, function settings, cron. |
 
-London:
-- LondonTheatre.co.uk date-specific musical listings identify which productions are musicals.
-- London Box Office date-specific pages provide listed performance times.
+## Running and deploying
 
-Broadway:
-- Broadway.org / The Broadway League performance-time grids provide date-specific schedules.
-- Broadway.org individual show pages are used to confirm that a production is categorized as a Musical.
-
-## Important production note
-
-This implementation reads public website pages. Website markup can change, which can require updating the parser. For a commercial/production service, obtain an authorized theatre/ticket data API or feed where possible and review the source sites' applicable terms.
-
-The app keeps the existing disclaimer that ticket transactions happen on third-party websites and are not processed by this planner.
+- `npm ci && node build.mjs` builds `public/`. Vercel runs the same command on every push; pull-request branches get a preview URL.
+- Environment variables on Vercel: `DATABASE_URL` (Neon: shared plans and feedback), `RESEND_API_KEY`, `FEEDBACK_TO`, `FEEDBACK_FROM`, `FEEDBACK_SALT` (feedback form and guide-check emails), `TICKETMASTER_API_KEY` (Ticketmaster links), `CRON_SECRET` (weekly guide check). Affiliate IDs are in the code. None are needed to build the static page locally.
+- Schedules are scraped from public listing pages; when a source site changes its markup the parser in `lib/` or `api/` needs updating (the weekly guide check emails a report).
