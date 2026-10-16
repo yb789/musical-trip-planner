@@ -44,10 +44,10 @@ mustReplace(
   'SeatPlan button + venue fallback'
 );
 // Ticketmaster blue so the two sellers are easy to tell apart. In the selected card the seller
-// buttons are full-width blocks (2026-10-16); .card-links beats the ≤900px .ticket-link{font-size:12px} rule.
+// buttons are big blocks side by side, wrapping on narrow phones (2026-10-16); .card-links beats the ≤900px .ticket-link{font-size:12px} rule.
 mustReplace(
   '.ticket-link{background:var(--accent)}',
-  '.ticket-link{background:var(--accent)}.ticket-link.tm-link{background:#024ddf}.card-links .ticket-link,.card-links .venue-link{display:block;width:100%;box-sizing:border-box;margin:8px 0 0;padding:12px 14px;font-size:15px;line-height:1.2;text-align:center;border-radius:10px}',
+  '.ticket-link{background:var(--accent)}.ticket-link.tm-link{background:#024ddf}.card-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.card-links .ticket-link,.card-links .venue-link{display:block;flex:1 1 0;min-width:max-content;box-sizing:border-box;margin:0;padding:11px 12px;font-size:14px;line-height:1.2;text-align:center;border-radius:10px;white-space:nowrap}',
   'tm css'
 );
 
