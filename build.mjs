@@ -21,7 +21,8 @@ const patches = [
   'patch-about-links.mjs',
   'patch-finish-bar.mjs',
   'patch-city-theme.mjs',
-  'patch-events.mjs'
+  'patch-events.mjs',
+  'patch-group-times.mjs'
 ];
 
 for (const patch of patches) {
