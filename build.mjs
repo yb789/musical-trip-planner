@@ -19,7 +19,8 @@ const patches = [
   'patch-show-helper.mjs',
   'patch-pdf-export.mjs',
   'patch-about-links.mjs',
-  'patch-finish-bar.mjs'
+  'patch-finish-bar.mjs',
+  'patch-city-theme.mjs'
 ];
 
 for (const patch of patches) {
