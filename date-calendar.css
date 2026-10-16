@@ -31,3 +31,11 @@
 .date-count-note.warning{padding:9px 10px;background:#fff2d9;border:1px solid #e5c681;color:#73520b}
 .warning-overlay{z-index:10030}
 @media(max-width:560px){.picker-day,.picker-blank{min-height:40px}.date-picker-modal{padding:18px}.range-part{min-width:100%}.picker-hint{font-size:15px;padding:10px 12px}}
+/* Way back to the opening screen (and the Help me choose quiz) from the date dialog. */
+.actions .back-start{margin-right:auto;align-self:center;font-size:13px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.actions .back-start:hover{color:var(--ink)}
+
+/* NO_PAST_DATES_PATCH */
+.picker-day.past-date,.picker-day:disabled{opacity:.35;background:#f1f1f1;color:#777;border-color:#ddd;cursor:not-allowed;box-shadow:none}
+.picker-day.past-date:hover,.picker-day:disabled:hover{border-color:#ddd}
+.range-picker-head button:disabled{opacity:.35;cursor:not-allowed}
