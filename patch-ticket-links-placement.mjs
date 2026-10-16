@@ -33,5 +33,23 @@ mustReplace(
   'card css'
 );
 
+// 4. (2026-10-16, Yuval) The green card already shows the show is chosen, so the button on the
+//    chosen card reads "Deselect ✕" (red, always — not only on hover). Unchosen cards keep "Choose".
+mustReplace(
+  `title="\${on?'Click again to deselect':'Choose this performance'}">\${on?'Selected ✓':'Choose'}<`,
+  `title="\${on?'Remove this performance from your plan':'Choose this performance'}">\${on?'Deselect ✕':'Choose'}<`,
+  'pick label'
+);
+mustReplace(
+  '.pick.selected{background:var(--green);border-color:var(--green);color:white}/* TICKET_LINKS_PLACEMENT_PATCH */',
+  '.pick.selected{background:#8a2515;border-color:#8a2515;color:white}/* TICKET_LINKS_PLACEMENT_PATCH */',
+  'selected pick colour'
+);
+mustReplace(
+  '@media(hover:hover){.pick.selected:hover{background:#8a2515;border-color:#8a2515;font-size:0}.pick.selected:hover::after{content:"Deselect ✕";font-size:12px}}',
+  '@media(hover:hover){.pick.selected:hover{background:#6f1c10;border-color:#6f1c10}}',
+  'selected pick hover'
+);
+
 fs.writeFileSync(file, s);
-console.log('patch-ticket-links-placement: ticket buttons moved into the selected card.');
+console.log('patch-ticket-links-placement: ticket buttons moved into the selected card; chosen card shows Deselect.');
