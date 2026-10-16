@@ -73,8 +73,11 @@ body.mh-open{overflow:hidden}
 .mh-banner-chips .mh-chip.off{background:#eee8df;color:#6b665f;text-decoration:line-through}
 .mh-banner .tools button{min-height:40px}
 .musical-row.mh-short{background:#fbf0e9}
-.mh-badge{display:inline-block;margin-left:6px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;background:#fbf0e9;color:var(--accent);vertical-align:middle;white-space:nowrap}
+/* 2026-10-16: shortlisted shows stand out — filled badge, tinted card with an accent bar. */
+.mh-badge{display:inline-block;margin-left:6px;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--accent);color:#fff;vertical-align:middle;white-space:nowrap}
+.show-card.mh-short-card{background:color-mix(in srgb,var(--accent) 9%,#fff);box-shadow:inset 5px 0 0 var(--accent);border-radius:12px;padding-left:14px;padding-right:8px;margin:0 -8px}
 .show-card.mh-short-card .time{box-shadow:inset 0 0 0 2px var(--accent)}
+.show-card.mh-short-card:has(.pick.selected){background:#e3efe8;box-shadow:inset 5px 0 0 var(--accent),inset 0 0 0 2px var(--green)}
 #mhDateNote{margin:0 0 12px}
 
 @media (max-width:760px){
