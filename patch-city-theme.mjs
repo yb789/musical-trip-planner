@@ -25,17 +25,32 @@ mustReplace(
   'setLoading'
 );
 
+// 1b. Opening screen (show-helper welcome, inlined by patch-show-helper.mjs): the city buttons
+//     there set hs.city and re-render, so tagging the body in renderWelcome() recolours the page
+//     and the overlay (which uses var(--bg)) immediately. The city <select> on the date dialog is
+//     handled by a delegated listener, because date-calendar.js rebuilds that dialog at runtime.
+mustReplace(
+  'function renderWelcome() {',
+  'function renderWelcome() {document.body.dataset.city=hs.city;',
+  'renderWelcome'
+);
+mustReplace(
+  "$('continueBtn').onclick=startPlanning;",
+  "$('continueBtn').onclick=startPlanning;document.addEventListener('change',e=>{if(e.target&&e.target.id==='startCity')document.body.dataset.city=e.target.value});",
+  'startCity change'
+);
+
 // 2. Broadway palette: overrides the :root tokens, the header gradient and the few hard-coded warm tints.
 mustReplace(
   '--shadow:0 12px 35px rgba(30,25,20,.08)}',
   '--shadow:0 12px 35px rgba(30,25,20,.08)}' +
   'body[data-city="broadway"]{--bg:#e6edf6;--paper:#fbfcfe;--line:#c7d2e0;--accent:#1d3f73;--shadow:0 12px 35px rgba(20,35,60,.10)}' +
-  'body[data-city="broadway"] header{background:linear-gradient(135deg,#0b1526,#1c3458)}' +
+  'body[data-city="broadway"] header,body[data-city="broadway"] .mh-top{background:linear-gradient(135deg,#0b1526,#1c3458)}' +
   'body[data-city="broadway"] header p{color:#d6e0ee}' +
   'body[data-city="broadway"] .badge{border-color:#4d6487;color:#e4ecf7}' +
   'body[data-city="broadway"] .time{background:#e9f0fa}' +
   'body[data-city="broadway"] .ticket-link:not(.tm-link){background:#7c2d12}' +
-  'body{transition:background-color .35s}header{transition:background .35s}',
+  'body,.mh-overlay{transition:background-color .35s}header,.mh-top{transition:background .35s}',
   'root tokens'
 );
 
