@@ -47,7 +47,7 @@ mustReplace(
 // buttons are big blocks side by side, wrapping on narrow phones (2026-10-16); .card-links beats the ≤900px .ticket-link{font-size:12px} rule.
 mustReplace(
   '.ticket-link{background:var(--accent)}',
-  '.ticket-link{background:var(--accent)}.ticket-link.tm-link{background:#024ddf}.card-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.card-links .ticket-link,.card-links .venue-link{display:block;flex:1 1 0;min-width:max-content;box-sizing:border-box;margin:0;padding:11px 12px;font-size:14px;line-height:1.2;text-align:center;border-radius:10px;white-space:nowrap}',
+  '.ticket-link{background:var(--accent)}.ticket-link.tm-link{background:#024ddf}.card-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.card-links .ticket-link,.card-links .venue-link{display:flex;align-items:center;justify-content:center;min-height:78px;flex:1 1 0;min-width:max-content;box-sizing:border-box;margin:0;padding:0 12px;font-size:14px;line-height:1.2;text-align:center;border-radius:12px;white-space:nowrap}',
   'tm css'
 );
 
