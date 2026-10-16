@@ -55,12 +55,12 @@
       { key: 'ticket', head: 'SeatPlan', label: 'Tickets on SeatPlan' },
       { key: 'ticketmaster', head: 'Ticketmaster', label: 'Tickets on Ticketmaster' }
     ].filter(d => rows.some(r => isUrl(r[d.key])));
-    const head = ['Date', 'Session', 'Time', 'Musical', 'Theatre / Venue', 'Address'];
+    const head = ['Date', 'Session', 'Time', 'Show', 'Kind', 'Theatre / Venue', 'Address'];
     const linkCols = {};
     for (const d of linkDefs) { linkCols[head.length] = d.key; head.push(d.head); }
     if (hasTickets) head.push('Booking ref.', 'Seat', 'Ticket PDF check');
     const body = rows.map(r => {
-      const line = [r.date, r.session, r.time, r.musical, r.venue || '', r.address || ''];
+      const line = [r.date, r.session, r.time, r.musical, r.kind || 'Musical', r.venue || '', r.address || ''];
       for (const d of linkDefs) line.push(isUrl(r[d.key]) ? d.label : '');
       if (hasTickets) line.push(r.bookingReference || '', r.seat || '', r.ticketMatch || '');
       return line.map(clean);
@@ -71,6 +71,12 @@
       headStyles: { fillColor: [31, 75, 63], textColor: 255 },
       alternateRowStyles: { fillColor: [247, 241, 231] },
       columnStyles: Object.fromEntries(Object.entries(linkCols).map(([i, key]) => [i, { textColor: key === 'ticketmaster' ? [2, 77, 223] : [124, 45, 18], fontStyle: 'bold' }])),
+      // Kind column coloured like the planner (play purple, spectacular amber, family green).
+      didParseCell: data => {
+        if (data.section !== 'body' || data.column.index !== 4) return;
+        const col = { Play: [79, 70, 160], Spectacular: [180, 86, 13], 'Family show': [31, 122, 77] }[String(data.cell.raw || '')];
+        if (col) { data.cell.styles.textColor = col; data.cell.styles.fontStyle = 'bold'; }
+      },
       didDrawCell: data => {
         if (data.section !== 'body') return;
         const key = linkCols[data.column.index];
