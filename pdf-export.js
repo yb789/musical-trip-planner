@@ -48,10 +48,20 @@
     doc.text(clean(`${cityLabel()}  |  ${range}`), 40, 64);
 
     const hasTickets = rows.some(r => r.bookingReference || r.seat || r.ticketMatch);
+    // Ticket link columns: clickable SeatPlan / Ticketmaster links per row (tracked affiliate links
+    // from selectedRows()). A column is only added when at least one row has that link.
+    const isUrl = v => /^https?:\/\//.test(v || '');
+    const linkDefs = [
+      { key: 'ticket', head: 'SeatPlan', label: 'Tickets on SeatPlan' },
+      { key: 'ticketmaster', head: 'Ticketmaster', label: 'Tickets on Ticketmaster' }
+    ].filter(d => rows.some(r => isUrl(r[d.key])));
     const head = ['Date', 'Session', 'Time', 'Musical', 'Theatre / Venue', 'Address'];
+    const linkCols = {};
+    for (const d of linkDefs) { linkCols[head.length] = d.key; head.push(d.head); }
     if (hasTickets) head.push('Booking ref.', 'Seat', 'Ticket PDF check');
     const body = rows.map(r => {
       const line = [r.date, r.session, r.time, r.musical, r.venue || '', r.address || ''];
+      for (const d of linkDefs) line.push(isUrl(r[d.key]) ? d.label : '');
       if (hasTickets) line.push(r.bookingReference || '', r.seat || '', r.ticketMatch || '');
       return line.map(clean);
     });
@@ -59,12 +69,20 @@
       head: [head], body, startY: 80, margin: { left: 40, right: 40 },
       styles: { font: 'helvetica', fontSize: 9, cellPadding: 5, overflow: 'linebreak', valign: 'top' },
       headStyles: { fillColor: [31, 75, 63], textColor: 255 },
-      alternateRowStyles: { fillColor: [247, 241, 231] }
+      alternateRowStyles: { fillColor: [247, 241, 231] },
+      columnStyles: Object.fromEntries(Object.entries(linkCols).map(([i, key]) => [i, { textColor: key === 'ticketmaster' ? [2, 77, 223] : [124, 45, 18], fontStyle: 'bold' }])),
+      didDrawCell: data => {
+        if (data.section !== 'body') return;
+        const key = linkCols[data.column.index];
+        if (!key) return;
+        const url = rows[data.row.index]?.[key];
+        if (isUrl(url)) doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url });
+      }
     });
     const y = Math.min((doc.lastAutoTable?.finalY || 80) + 20, doc.internal.pageSize.getHeight() - 30);
     doc.setFontSize(7);
     doc.setTextColor(110);
-    doc.text(doc.splitTextToSize('Made with musicaltripplanner.com. Ticket purchases are handled solely by third-party providers. Verify show, date, time and venue with your ticket provider before travelling.', doc.internal.pageSize.getWidth() - 80), 40, y);
+    doc.text(doc.splitTextToSize('Made with musicaltripplanner.com. Ticket purchases are handled solely by third-party providers. Verify show, date, time and venue with your ticket provider before travelling. Ticket links are affiliate links: we may earn a small commission if you book, at no extra cost to you.', doc.internal.pageSize.getWidth() - 80), 40, y);
     return doc;
   }
 

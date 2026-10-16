@@ -6,7 +6,7 @@ import fs from 'node:fs';
 //    performance. The link comes from /api/tm-link (licensed Discovery API, already wrapped in the
 //    Impact link); it is fetched once per performance and cached in memory, and the card is
 //    re-rendered when it arrives. No Ticketmaster match = no button.
-// Runs after patch-seatplan-link.mjs. Exports (PDF/Excel) keep the plain SeatPlan link.
+// Runs after patch-seatplan-link.mjs. Exports (Excel cell, PDF link column) use the tracked link too.
 
 const file = 'index.html';
 let s = fs.readFileSync(file, 'utf8');
@@ -20,7 +20,7 @@ function mustReplace(search, replacement, label) {
 
 const helpers = `/* AFFILIATE_LINKS_PATCH */
 const SP_AFFILIATE='https://seatplan.sjv.io/c/7761524/2219054/28679';
-function spTracked(url,name){if(!/^https?:\\/\\/([a-z0-9-]+\\.)*seatplan\\.com\\//i.test(url||''))return url;const sub='planner-'+String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60);return SP_AFFILIATE+'?u='+encodeURIComponent(url)+(sub!=='planner-'?'&subId1='+encodeURIComponent(sub):'')}
+function spTracked(url,name,src='planner'){if(!/^https?:\\/\\/([a-z0-9-]+\\.)*seatplan\\.com\\//i.test(url||''))return url;const sub=src+'-'+String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60);return SP_AFFILIATE+'?u='+encodeURIComponent(url)+(sub!==src+'-'?'&subId1='+encodeURIComponent(sub):'')}
 const tmLinks=new Map(),tmPending=new Set();
 function tmKey(c,d){return [state.city,c.name,d,c.time].join('|')}
 function tmLinkHtml(c,d){
@@ -58,5 +58,52 @@ mustReplace(
   'disclosure'
 );
 
+// Exports (2026-10-16): the Excel "Ticket Website" cell and the PDF "Tickets" link also go through
+// the SeatPlan tracking link, with subId1=export-<show> so Impact shows clicks from saved files.
+// selectedRows() is overridden at runtime twice (date-calendar.js, then the ticket-confirmation
+// wrapper, both inlined), so the effective place is the wrapper's row mapping.
+mustReplace(
+  "return {...row,bookingReference:choice?.bookingReference||'',seat:choice?.seat||'',ticketMatch:verification?verificationLabel(verification.status):''};",
+  "return {...row,ticket:spTracked(choice?ticketLinkFor(choice):row.ticket,row.musical,'export'),ticketmaster:(choice&&tmExport.get(tmExportKey(choice,row.date)))||'',bookingReference:choice?.bookingReference||'',seat:choice?.seat||'',ticketMatch:verification?verificationLabel(verification.status):''};",
+  'export ticket link'
+);
+
+// Ticketmaster in the exports too: the links are fetched for every chosen performance when
+// "Finish planning" is pressed (the export panel opens after a confirmation, so they are ready),
+// cached in tmExport and read by the row mapping above. Excel gets a "Tickets on Ticketmaster"
+// column; the PDF (pdf-export.js) gets a second link column.
+mustReplace(
+  'function linkHtml(c){',
+  `const tmExport=new Map();
+function tmExportKey(c,dateLabel){return [state.city,dateLabel,c.name,c.time].join('|')}
+function tmLinksForExport(){
+  const jobs=[];
+  for(const [d,day] of Object.entries(choices())){
+    for(const sess of ['matinee','evening']){const c=day?.[sess];if(!c)continue;const k=tmExportKey(c,fmt(d));if(tmExport.has(k))continue;
+      const cached=tmLinks.get(tmKey(c,d));if(cached!==undefined){tmExport.set(k,cached.replace(/([?&]subId1=)planner-/,'$1export-'));continue}
+      jobs.push(fetch('/api/tm-link?'+new URLSearchParams({city:state.city,name:c.name,date:d,time:c.time||''})).then(r=>r.ok?r.json():{url:''}).catch(()=>({url:''})).then(j=>{const u=String((j&&j.url)||'');const ok=/^https:\\/\\/ticketmaster\\.evyy\\.net\\//.test(u)?u:'';tmExport.set(k,ok.replace(/([?&]subId1=)planner-/,'$1export-'));tmLinks.set(tmKey(c,d),ok)}));
+    }
+  }
+  return Promise.all(jobs);
+}
+function linkHtml(c){`,
+  'tm export helpers'
+);
+mustReplace(
+  "$('finishBtn').onclick=()=>{",
+  "$('finishBtn').onclick=()=>{try{tmLinksForExport()}catch(e){}",
+  'finish prefetch'
+);
+mustReplace(
+  "const headers=['City','Date','Session','Start Time','Musical','Theater / Venue','Address','Booking Confirmation','Seat','Ticket PDF Check','Ticket Website','Theater / Venue Website'];",
+  "const headers=['City','Date','Session','Start Time','Musical','Theater / Venue','Address','Booking Confirmation','Seat','Ticket PDF Check','Tickets on SeatPlan','Tickets on Ticketmaster','Theater / Venue Website'];",
+  'excel headers'
+);
+mustReplace(
+  "const keys=['city','date','session','time','musical','venue','address','bookingReference','seat','ticketMatch','ticket','theatre'];",
+  "const keys=['city','date','session','time','musical','venue','address','bookingReference','seat','ticketMatch','ticket','ticketmaster','theatre'];",
+  'excel keys'
+);
+
 fs.writeFileSync(file, s);
-console.log('patch-affiliate-links: SeatPlan tracking + Ticketmaster button applied.');
+console.log('patch-affiliate-links: SeatPlan tracking + Ticketmaster button applied (planner + exports).');
