@@ -23,7 +23,8 @@ const patches = [
   'patch-city-theme.mjs',
   'patch-events.mjs',
   'patch-group-times.mjs',
-  'patch-show-kinds.mjs'
+  'patch-show-kinds.mjs',
+  'patch-show-kinds-2.mjs'
 ];
 
 for (const patch of patches) {

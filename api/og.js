@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import satori from "satori";
 import { Resvg, initWasm } from "@resvg/resvg-wasm";
-import { loadPlan, isValidCode, planStats, cityShort, rangeLabel } from "../lib/plans.js";
+import { loadPlan, isValidCode, planStats, showsWord, cityShort, rangeLabel } from "../lib/plans.js";
 
 // Generates the site's share image and app icons on demand (no binary files in the repo).
 //   /api/og                  -> 1200x630 Open Graph / Twitter card image (PNG)
@@ -100,7 +100,7 @@ export function planImage(plan) {
     h("div", { position: "absolute", left: 150, right: 150, bottom: 56, height: 4, backgroundColor: GOLD }),
     h("div", { position: "absolute", left: 150, right: 150, top: 0, bottom: 0, display: "flex", flexDirection: "column", justifyContent: "center", paddingLeft: 40, paddingRight: 40 },
       h("div", { fontSize: 24, fontWeight: 700, color: GOLD, fontFamily: "sans-serif", letterSpacing: 2, marginBottom: 14 }, "MY MUSICAL TRIP"),
-      h("div", { fontSize: 60, fontWeight: 700, color: PAPER, marginBottom: 6, whiteSpace: "nowrap" }, `${shows} musical${shows === 1 ? "" : "s"} in ${cityShort(plan.city)}`),
+      h("div", { fontSize: 60, fontWeight: 700, color: PAPER, marginBottom: 6, whiteSpace: "nowrap" }, `${showsWord(plan)} in ${cityShort(plan.city)}`),
       h("div", { fontSize: 34, color: "#eadfd5", fontFamily: "sans-serif", marginBottom: 30, whiteSpace: "nowrap" }, rangeLabel(plan.ranges)),
       h("div", { display: "flex", flexDirection: "column" }, ...rows),
       h("div", { fontSize: 24, fontWeight: 700, color: GOLD, marginTop: 34, fontFamily: "sans-serif" }, "Planned with musicaltripplanner.com")
