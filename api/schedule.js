@@ -136,6 +136,7 @@ async function scrapeLondonRange(start,end){
   for(const d of dates){const seen=new Set();schedule[d]=schedule[d].filter(([n,t])=>{const k=`${normalizeTitle(n)}|${t}`;if(seen.has(k))return false;seen.add(k);return true})}
   // Ticket links point at SeatPlan; the original London Box Office link is kept as sourceTicketUrl.
   const showList=await applySeatPlanLinks("london",[...shows.values()]);
+  for(const s of showList)if(!s.kind)s.kind=(guideEntryFor("london",s.name)||{}).kind||"musical"; // shows added by the LBO calendar fallback
   return {shows:showList,schedule,sources:["LondonTheatre.co.uk (musical listings)","London Box Office (performance times)","SeatPlan (ticket links)"]};
 }
 
