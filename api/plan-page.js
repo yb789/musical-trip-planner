@@ -49,6 +49,7 @@ ${noindex ? '<meta name="robots" content="noindex">' : ""}
 <meta name="twitter:description" content="${esc(description)}"><meta name="twitter:image" content="${esc(image)}">
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
 <script defer src="/_vercel/insights/script.js"></script>
+<script defer src="/events.js"></script>
 <style>${CSS}</style></head>
 <body>${body}
 <footer>Free planner for West End and Broadway trips · <a href="/">musicaltripplanner.com</a></footer>
