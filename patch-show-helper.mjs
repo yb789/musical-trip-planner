@@ -11,8 +11,8 @@ const guide = {
 };
 // Keep only what the page needs, and make the JSON safe inside a <script> tag.
 const slim = Object.fromEntries(Object.entries(guide).map(([city, d]) => [city, {
-  shows: d.shows.map(({ id, title, match, venue, status, dates, bookingUntil, limitedRun, vibes, audience, familiar, runtime, blurb, listen }) =>
-    ({ id, title, match, venue, status, dates, bookingUntil, limitedRun, vibes, audience, familiar, runtime, blurb, listen }))
+  shows: d.shows.map(({ id, title, match, venue, status, dates, bookingUntil, limitedRun, vibes, audience, familiar, runtime, blurb, listen, kind, offBroadway }) =>
+    ({ id, title, match, venue, status, dates, bookingUntil, limitedRun, vibes, audience, familiar, runtime, blurb, listen, ...(kind ? { kind } : {}), ...(offBroadway ? { offBroadway: true } : {}) }))
 }]));
 const data = JSON.stringify(slim).replace(/</g, '\\u003c');
 
