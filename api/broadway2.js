@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { applySeatPlanLinks } from "../lib/seatplan.js";
+import { guideEntryFor } from "../lib/site-pages.js";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const cache = new Map();
@@ -132,8 +133,14 @@ async function mapLimit(items,limit,fn){
 async function scrape(start,end){
   const musicalUrl='https://www.broadway.com/shows/tickets/?category=musical&view_all=true';
   const broadwayUrl='https://www.broadway.com/shows/tickets/?category=broadway&view_all=true';
-  const [musicalHtml,broadwayHtml]=await Promise.all([fetchText(musicalUrl),fetchText(broadwayUrl)]);
-  const candidates=intersection(extractShowLinks(musicalHtml,musicalUrl),extractShowLinks(broadwayHtml,broadwayUrl));
+  const playUrl='https://www.broadway.com/shows/tickets/?category=play&view_all=true';
+  const [musicalHtml,broadwayHtml,playHtml]=await Promise.all([fetchText(musicalUrl),fetchText(broadwayUrl),fetchText(playUrl).catch(()=>'')]);
+  // Plays (and other non-musicals) are kept only when our guide lists them, so the planner can
+  // offer them to visitors who opt in; everything else on the plays list is ignored.
+  const musicalLinks=extractShowLinks(musicalHtml,musicalUrl);
+  const musicalHrefs=new Set(musicalLinks.map(m=>m.href));
+  const playLinks=playHtml?extractShowLinks(playHtml,playUrl).filter(p=>!musicalHrefs.has(p.href)&&(guideEntryFor('new-york',p.name)||{}).kind&&guideEntryFor('new-york',p.name).kind!=='musical'):[];
+  const candidates=intersection([...musicalLinks,...playLinks],extractShowLinks(broadwayHtml,broadwayUrl));
   if(!candidates.length) throw new Error('No Broadway musical candidates discovered');
 
   const dates=[];
@@ -164,7 +171,8 @@ async function scrape(start,end){
         name:cleanName,
         venue:p.venue||'Broadway, New York',
         ticketUrl:p.href,
-        infoUrl:p.href
+        infoUrl:p.href,
+        kind:(guideEntryFor('new-york',cleanName)||{}).kind||'musical'
       });
     }
   }

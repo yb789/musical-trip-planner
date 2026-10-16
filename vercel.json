@@ -18,6 +18,14 @@
     "api/tm-link.js": {
       "includeFiles": "data/**",
       "maxDuration": 15
+    },
+    "api/schedule.js": {
+      "includeFiles": "data/**",
+      "maxDuration": 60
+    },
+    "api/broadway2.js": {
+      "includeFiles": "data/**",
+      "maxDuration": 60
     }
   },
   "headers": [
