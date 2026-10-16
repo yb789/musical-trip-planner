@@ -2,7 +2,6 @@
   "_note": "Names the weekly guide check should not report as missing. Plain strings are ignored permanently; {\"name\": ..., \"until\": \"YYYY-MM-DD\"} is ignored until that date (e.g. a postponed show that may return).",
   "london": [
     "ABBA Voyage",
-    "Come Alive! The Greatest Showman Circus Spectacular",
     "Showstopper! The Improvised Musical",
     "The Last Ship",
     "I'm Every Woman",
