@@ -35,6 +35,8 @@ function normalize(s){
     .replace(/[^a-z0-9]+/g,"")
     .trim();
 }
+// "$110.08" -> "$110.08", "$97.00" -> "$97"; anything else -> "".
+function formatPrice(raw){const m=String(raw||"").match(/([£$])\s*(\d[\d,]*)(?:\.(\d{2}))?/);if(!m)return"";const whole=m[2].replace(/,/g,"");return m[1]+whole+(m[3]&&m[3]!=="00"?"."+m[3]:"")}
 function absolute(base,href){try{return new URL(href,base).href}catch{return ""}}
 function regexEscape(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
 
@@ -85,20 +87,25 @@ function parseSchedule(html,title,start,end){
   const text=$('body').text().replace(/\s+/g,' ');
   const startS=iso(start), endS=iso(end);
   const months={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
-  const schedule={};
-  const re=/\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),\s+(\d{4})\s+(\d{1,2}):(\d{2})(am|pm)\b/gi;
-  let m;
-  while((m=re.exec(text))){
-    const mon=m[1][0].toUpperCase()+m[1].slice(1,3).toLowerCase();
-    const date=`${m[3]}-${months[mon]}-${String(Number(m[2])).padStart(2,'0')}`;
-    if(date<startS||date>endS) continue;
-    let h=Number(m[4]);
-    const ap=m[6].toLowerCase();
-    if(ap==='pm'&&h!==12)h+=12;
-    if(ap==='am'&&h===12)h=0;
-    const time=`${String(h).padStart(2,'0')}:${m[5]}`;
-    if(!schedule[date]) schedule[date]=[];
-    if(!schedule[date].includes(time)) schedule[date].push(time);
+  const schedule={}; // date -> [{time, meta}] ; meta = {from:"$110", soldOut:true}
+  const toTime=(hh,mm,ap)=>{let h=Number(hh);ap=ap.toLowerCase();if(ap==='pm'&&h!==12)h+=12;if(ap==='am'&&h===12)h=0;return `${String(h).padStart(2,'0')}:${mm}`};
+  const toDate=(mon,day,year)=>`${year}-${months[mon[0].toUpperCase()+mon.slice(1,3).toLowerCase()]}-${String(Number(day)).padStart(2,'0')}`;
+  const add=(date,time,meta)=>{if(date<startS||date>endS)return;if(!schedule[date])schedule[date]=[];if(!schedule[date].some(x=>x.time===time))schedule[date].push({time,meta})};
+  // Broadway.com's schedule rows carry a per-performance "from $X" (or "Sold Out").
+  $('.showpage__event-info--right-container').each((_,row)=>{
+    const dm=$(row).find('.showpage__event-info--date').text().match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),\s+(\d{4})/i);
+    const tm=$(row).find('.showpage__event-info--time').text().match(/(\d{1,2}):(\d{2})\s*(am|pm)/i);
+    if(!dm||!tm) return;
+    const meta={};
+    const from=formatPrice($(row).find('.showpage__event-info--price').text());
+    if(from) meta.from=from;
+    if(/sold out/i.test($(row).find('.showpage__event-unavailable-text').text())) meta.soldOut=true;
+    add(toDate(dm[1],dm[2],dm[3]),toTime(tm[1],tm[2],tm[3]),meta);
+  });
+  if(!Object.keys(schedule).length){
+    const re=/\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),\s+(\d{4})\s+(\d{1,2}):(\d{2})(am|pm)\b/gi;
+    let m;
+    while((m=re.exec(text))) add(toDate(m[1],m[2],m[3]),toTime(m[4],m[5],m[6]),{});
   }
 
   let venue='Broadway, New York';
@@ -161,8 +168,8 @@ async function scrape(start,end){
     let hasAny=false;
     for(const [date,times] of Object.entries(p.schedule||{})){
       if(!schedule[date]) continue;
-      for(const time of times){
-        schedule[date].push([cleanName,time]);
+      for(const {time,meta} of times){
+        schedule[date].push(meta&&Object.keys(meta).length?[cleanName,time,meta]:[cleanName,time]);
         hasAny=true;
       }
     }
@@ -179,7 +186,7 @@ async function scrape(start,end){
 
   for(const d of dates){
     const seen=new Set();
-    schedule[d]=schedule[d].map(([name,time])=>[cleanShowTitle(name),time]).filter(([name,time])=>{
+    schedule[d]=schedule[d].map(([name,time,meta])=>meta?[cleanShowTitle(name),time,meta]:[cleanShowTitle(name),time]).filter(([name,time])=>{
       const k=`${normalize(name)}|${time}`;
       if(seen.has(k)) return false;
       seen.add(k);
@@ -190,7 +197,7 @@ async function scrape(start,end){
   if(!shows.length) throw new Error('Broadway.com full schedule pages returned no performances for the selected range');
   // Ticket links point at SeatPlan; the Broadway.com show page stays available as infoUrl / sourceTicketUrl.
   await applySeatPlanLinks('broadway',shows);
-  return {shows,schedule,sources:['Broadway.com full show schedule pages','SeatPlan (ticket links)']};
+  return {shows,schedule,sources:['Broadway.com full show schedule pages (times and starting prices)','SeatPlan (ticket links)']};
 }
 
 export default async function handler(req,res){

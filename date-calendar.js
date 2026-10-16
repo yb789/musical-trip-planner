@@ -310,12 +310,13 @@
           if (!schedule[date]) schedule[date] = [];
           const seen = new Set(schedule[date].map(([name, time]) => `${String(name).toLowerCase()}|${time}`));
           for (const item of Array.isArray(entries) ? entries : []) {
-            let [name, time] = item || [];
+            let [name, time, meta] = item || [];
             if (typeof cleanShowTitle === 'function') name = cleanShowTitle(name);
             const key = `${String(name || '').toLowerCase()}|${time}`;
             if (name && time && !seen.has(key)) {
               seen.add(key);
-              schedule[date].push([name, time]);
+              // meta (optional): per-performance details from the seller, e.g. {from:"£30", soldOut:true, url}
+              schedule[date].push(meta && typeof meta === 'object' ? [name, time, meta] : [name, time]);
               performanceCount++;
             }
           }

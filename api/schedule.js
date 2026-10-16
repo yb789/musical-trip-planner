@@ -25,6 +25,8 @@ function rangeDates(start,end){const out=[];let d=new Date(start);while(d<=end&&
 function normalizeTitle(s){return String(s||"").toLowerCase().normalize("NFKD").replace(/\p{M}/gu,"").replace(/&/g,"and").replace(/^the\s+/,"").replace(/[^a-z0-9]+/g,"").trim()}
 function absolute(base,href){if(!href)return"";try{return new URL(href,base).href}catch{return""}}
 function normalizeTime(raw){const m=String(raw||"").trim().match(/(\d{1,2}):(\d{2})\s*(am|pm)/i);if(!m)return null;let h=Number(m[1]),min=m[2],ap=m[3].toLowerCase();if(ap==="pm"&&h!==12)h+=12;if(ap==="am"&&h===12)h=0;return `${String(h).padStart(2,"0")}:${min}`}
+// "£30.00" -> "£30", "£36.50" -> "£36.50"; anything else -> "".
+function formatPrice(raw){const m=String(raw||"").match(/([£$])\s*(\d[\d,]*)(?:\.(\d{2}))?/);if(!m)return"";const whole=m[2].replace(/,/g,"");return m[1]+whole+(m[3]&&m[3]!=="00"?"."+m[3]:"")}
 function extractTimes(text){const matches=String(text||"").match(/\b\d{1,2}:\d{2}\s*(?:AM|PM)\b/gi)||[];return [...new Set(matches.map(normalizeTime).filter(Boolean))]}
 
 async function fetchText(url){
@@ -90,7 +92,22 @@ async function scrapeLondonDay(date){
     // knows (any kind but musical) so the planner can offer them when the visitor opts in.
     if(!musical){const g=guideEntryFor("london",title);if(g&&g.kind!=="musical")musical={name:g.title,href:"",kind:g.kind}}
     if(!musical)return;
-    const times=extractTimes(block);
+    // Per-performance details: London Box Office prints each start time with its own
+    // "Tickets from £X" and Book link (/search/day/<show>/<y>/<m>/<d>/2/<hour>).
+    const perfs=[];
+    container.find("strong").each((_,st)=>{
+      const time=normalizeTime($(st).text());
+      if(!time)return;
+      const row=$(st).parent();
+      const meta={};
+      const price=row.find(".from strong").first().text().trim();
+      const from=formatPrice(price);
+      if(from)meta.from=from;
+      const book=row.find("a").filter((_,a)=>/\bBook\b/i.test($(a).text())).first().attr("href");
+      if(book)meta.url=absolute(timesUrl,book);
+      if(!perfs.some(p=>p[0]===time))perfs.push([time,meta]);
+    });
+    const times=perfs.length?perfs.map(p=>p[0]):extractTimes(block);
     if(!times.length)return;
     let venue="";
     const vm=block.match(/Playing at:\s*(.*?)(?:Booking until:|Starring:|Performances|Tickets from|$)/i);
@@ -100,7 +117,8 @@ async function scrapeLondonDay(date){
     const gk=musical.kind||(guideEntryFor("london",musical.name||title)||{}).kind||"musical";
     const show={name:musical.name||title,venue:venue||"London",ticketUrl:ticketUrl||timesUrl,infoUrl:musical.href||musicalUrl,kind:gk};
     foundShows.set(normalizeTitle(show.name),show);
-    times.forEach(time=>performances.push([show.name,time]));
+    if(perfs.length)perfs.forEach(([time,meta])=>performances.push(Object.keys(meta).length?[show.name,time,meta]:[show.name,time]));
+    else times.forEach(time=>performances.push([show.name,time]));
   });
 
   if(!performances.length){
@@ -137,7 +155,7 @@ async function scrapeLondonRange(start,end){
   // Ticket links point at SeatPlan; the original London Box Office link is kept as sourceTicketUrl.
   const showList=await applySeatPlanLinks("london",[...shows.values()]);
   for(const s of showList)if(!s.kind)s.kind=(guideEntryFor("london",s.name)||{}).kind||"musical"; // shows added by the LBO calendar fallback
-  return {shows:showList,schedule,sources:["LondonTheatre.co.uk (musical listings)","London Box Office (performance times)","SeatPlan (ticket links)"]};
+  return {shows:showList,schedule,sources:["LondonTheatre.co.uk (musical listings)","London Box Office (performance times and starting prices)","SeatPlan (ticket links)"]};
 }
 
 export default async function handler(req,res){
