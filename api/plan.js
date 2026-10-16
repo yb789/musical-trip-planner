@@ -1,4 +1,4 @@
-import { SITE, normalizePlan, storePlan, loadPlan, isValidCode, planTitle } from "../lib/plans.js";
+import { SITE, normalizePlan, storePlan, loadPlan, isValidCode, planTitle, RateLimited } from "../lib/plans.js";
 
 // Shareable itineraries.
 //   POST /api/plan   body: {city, ranges:[{start,end}], choices:{date:{matinee,evening}}}  -> {code, url}
@@ -13,7 +13,13 @@ export default async function handler(req, res) {
       if (typeof body === "string") { try { body = JSON.parse(body); } catch { body = null; } }
       let plan;
       try { plan = normalizePlan(body); } catch (e) { return res.status(400).json({ error: e.message }); }
-      const code = await storePlan(plan);
+      const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket?.remoteAddress || "";
+      let code;
+      try { code = await storePlan(plan, ip); }
+      catch (e) {
+        if (e instanceof RateLimited) { res.setHeader("Retry-After", "3600"); res.setHeader("Cache-Control", "no-store"); return res.status(429).json({ error: e.message }); }
+        throw e;
+      }
       res.setHeader("Cache-Control", "no-store");
       return res.status(201).json({ code, url: `${SITE}/plan/${code}`, title: planTitle(plan) });
     }
