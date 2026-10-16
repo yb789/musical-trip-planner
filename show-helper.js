@@ -37,16 +37,20 @@
   const KNOWN_LBL = { classic: 'well-known shows', new: 'newer shows', either: 'any show' };
 
   // ---------- state ----------
-  const hs = { city: 'london', step: 0, ans: {}, short: { london: [], broadway: [] }, hearts: new Set(), screen: '' };
+  // Show kinds the visitor wants in the planner. Musicals are always on; plays, spectaculars and
+  // family shows are opt-in on the opening screen and remembered in this browser.
+  const KINDS = [['musical', 'Musicals'], ['play', 'Big plays'], ['spectacular', 'Spectaculars & concerts'], ['family', 'Family shows']];
+  const hs = { city: 'london', step: 0, ans: {}, short: { london: [], broadway: [] }, hearts: new Set(), screen: '', kinds: ['musical'] };
   try {
     const x = JSON.parse(localStorage.getItem(KEY) || '{}');
     if (CITIES.includes(x.city)) hs.city = x.city;
     else if (typeof state !== 'undefined' && CITIES.includes(state.city)) hs.city = state.city;
     if (x.ans && typeof x.ans === 'object') hs.ans = x.ans;
     for (const c of CITIES) if (Array.isArray(x.short?.[c])) hs.short[c] = x.short[c].filter(v => typeof v === 'string');
+    if (Array.isArray(x.kinds)) hs.kinds = ['musical', ...x.kinds.filter(k => k !== 'musical' && KINDS.some(([id]) => id === k))];
   } catch {}
   function persist() {
-    try { localStorage.setItem(KEY, JSON.stringify({ city: hs.city, ans: hs.ans, short: hs.short })); } catch {}
+    try { localStorage.setItem(KEY, JSON.stringify({ city: hs.city, ans: hs.ans, short: hs.short, kinds: hs.kinds })); } catch {}
   }
 
   // ---------- matching live show names to guide entries ----------
@@ -63,6 +67,15 @@
     return guide(city).find(g => g._keys.includes(k)) || guide(city).find(g => g._keys.some(x => x.length > 5 && k.length > 5 && (x.includes(k) || k.includes(x)))) || null;
   }
   // Used by the planner's hover tooltip to show our own description of a show.
+  // Kind of a live show: the schedule's own tag, else the guide's, else musical.
+  function kindOfName(name) {
+    try { const m = typeof showMeta === 'function' ? showMeta(name) : null; if (m && m.kind) return m.kind; } catch {}
+    const g = window.mhGuideEntry(name);
+    return (g && g.kind) || 'musical';
+  }
+  window.mhKindOf = kindOfName;
+  window.mhKindAllowed = name => hs.kinds.includes(kindOfName(name));
+  window.mhExtraKinds = () => hs.kinds.length > 1;
   window.mhGuideEntry = name => {
     const city = (typeof state !== 'undefined' && CITIES.includes(state.city)) ? state.city : hs.city;
     return entryForName(city, name) || entryForName(city === 'london' ? 'broadway' : 'london', name);
@@ -79,11 +92,13 @@
   }
   const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
+  // The quiz recommends musicals only (plays and spectaculars are opt-in extras in the planner).
+  const isMusical = g => !g.kind || g.kind === 'musical';
   function candidates(city) {
     const live = liveKeys(city);
-    if (live) return { list: guide(city).filter(g => live.has(g.id)), live: true };
+    if (live) return { list: guide(city).filter(g => isMusical(g) && live.has(g.id)), live: true };
     const t = todayISO();
-    return { list: guide(city).filter(g => g.status !== 'upcoming' && !(g.bookingUntil && g.bookingUntil < t)), live: false };
+    return { list: guide(city).filter(g => isMusical(g) && g.status !== 'upcoming' && !(g.bookingUntil && g.bookingUntil < t)), live: false };
   }
 
   function rank(city) {
@@ -142,6 +157,11 @@
       <div class="mh-cities" role="group" aria-labelledby="mhCityQ">
         ${CITIES.map(c => `<button type="button" data-act="city" data-city="${c}" aria-pressed="${hs.city === c}">${c === 'london' ? 'London · West End' : 'New York · Broadway'}</button>`).join('')}
       </div>
+      <h2 class="mh-q" id="mhKindsQ">What would you like to see?</h2>
+      <div class="mh-kinds" role="group" aria-labelledby="mhKindsQ">
+        ${KINDS.map(([id, label]) => `<label class="mh-kind${id === 'musical' ? ' mh-kind-fixed' : ''}"><input type="checkbox" data-act="kind" data-kind="${id}" ${hs.kinds.includes(id) ? 'checked' : ''} ${id === 'musical' ? 'disabled' : ''}> ${label}</label>`).join('')}
+      </div>
+      <p class="small mh-kinds-note">Musicals are always included. Tick the others to see them in the planner too — Harry Potter and the Cursed Child, Stranger Things, ABBA Voyage and more.</p>
       <h2 class="mh-q">What would you like to do?</h2>
       <div class="mh-paths">
         <button type="button" class="mh-card" data-act="know"><span class="mh-icon">${ICON_CAL}</span><span class="mh-card-title">I know my Musicals take me to the planner</span><span class="mh-card-text">Pick your dates and choose a matinee and an evening show for each day.</span><span class="mh-card-cta">Go to the planner →</span></button>
@@ -245,6 +265,14 @@
     const b = e.target.closest('[data-act]');
     if (!b || b.disabled) return;
     const act = b.dataset.act;
+    if (act === 'kind') {
+      const id = b.dataset.kind;
+      if (id === 'musical') { b.checked = true; return; }
+      hs.kinds = b.checked ? [...new Set([...hs.kinds, id])] : hs.kinds.filter(k => k !== id);
+      persist();
+      try { if (typeof refreshPlanner === 'function' && state.start && state.end) refreshPlanner(); } catch {}
+      return;
+    }
     if (act === 'city') { hs.city = b.dataset.city; persist(); renderWelcome(); overlay.querySelector(`[data-city="${hs.city}"]`)?.focus(); }
     else if (act === 'know') goPlanner(hs.city);
     else if (act === 'help') { hs.step = 0; location.hash = '#/helper'; }

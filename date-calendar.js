@@ -325,7 +325,8 @@
 
       for (const date of days()) if (!schedule[date]) schedule[date] = [];
       state.data[state.city] = { shows: [...showsByName.values()], schedule };
-      setStatus(`Live schedule refreshed: ${showsByName.size} musicals and ${performanceCount} performance slots found across ${count} selected day${count === 1 ? '' : 's'}. ${[...sources].join(' + ')}`, 'ok');
+      const musicalCount = [...showsByName.values()].filter(s => !s.kind || s.kind === 'musical').length, extraCount = showsByName.size - musicalCount;
+      setStatus(`Live schedule refreshed: ${musicalCount} musicals${extraCount ? ` and ${extraCount} plays, spectaculars or family shows` : ''}, ${performanceCount} performance slots found across ${count} selected day${count === 1 ? '' : 's'}. ${[...sources].join(' + ')}`, 'ok');
       renderAll();
     } catch (error) {
       console.error(error);

@@ -22,7 +22,8 @@ const patches = [
   'patch-finish-bar.mjs',
   'patch-city-theme.mjs',
   'patch-events.mjs',
-  'patch-group-times.mjs'
+  'patch-group-times.mjs',
+  'patch-show-kinds.mjs'
 ];
 
 for (const patch of patches) {

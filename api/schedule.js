@@ -2,6 +2,7 @@ import * as cheerio from "cheerio";
 import broadwayHandler from "./broadway2.js";
 import { applySeatPlanLinks } from "../lib/seatplan.js";
 import { findMissingPerformances } from "../lib/lbo-calendar.js";
+import { guideEntryFor } from "../lib/site-pages.js";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const cache = new Map();
@@ -85,6 +86,9 @@ async function scrapeLondonDay(date){
       const cats=String(item.attr("data-categories")||"").split(/\s+/).filter(Boolean);
       if(cats.includes("m")&&!looksNonMusical(title,cats))musical={name:title,href:""};
     }
+    // Plays, spectaculars and family shows: the day page lists them too; keep the ones our guide
+    // knows (any kind but musical) so the planner can offer them when the visitor opts in.
+    if(!musical){const g=guideEntryFor("london",title);if(g&&g.kind!=="musical")musical={name:g.title,href:"",kind:g.kind}}
     if(!musical)return;
     const times=extractTimes(block);
     if(!times.length)return;
@@ -93,7 +97,8 @@ async function scrapeLondonDay(date){
     if(vm)venue=vm[1].trim();
     let ticketUrl="";
     container.find("a").each((_,a)=>{if(ticketUrl)return;const at=$(a).text().trim();const href=$(a).attr("href");if(href&&/\bBook\b/i.test(at))ticketUrl=absolute(timesUrl,href)});
-    const show={name:musical.name||title,venue:venue||"London",ticketUrl:ticketUrl||timesUrl,infoUrl:musical.href||musicalUrl};
+    const gk=musical.kind||(guideEntryFor("london",musical.name||title)||{}).kind||"musical";
+    const show={name:musical.name||title,venue:venue||"London",ticketUrl:ticketUrl||timesUrl,infoUrl:musical.href||musicalUrl,kind:gk};
     foundShows.set(normalizeTitle(show.name),show);
     times.forEach(time=>performances.push([show.name,time]));
   });
@@ -131,6 +136,7 @@ async function scrapeLondonRange(start,end){
   for(const d of dates){const seen=new Set();schedule[d]=schedule[d].filter(([n,t])=>{const k=`${normalizeTitle(n)}|${t}`;if(seen.has(k))return false;seen.add(k);return true})}
   // Ticket links point at SeatPlan; the original London Box Office link is kept as sourceTicketUrl.
   const showList=await applySeatPlanLinks("london",[...shows.values()]);
+  for(const s of showList)if(!s.kind)s.kind=(guideEntryFor("london",s.name)||{}).kind||"musical"; // shows added by the LBO calendar fallback
   return {shows:showList,schedule,sources:["LondonTheatre.co.uk (musical listings)","London Box Office (performance times)","SeatPlan (ticket links)"]};
 }
 

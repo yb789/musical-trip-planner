@@ -104,3 +104,10 @@ body.mh-open{overflow:hidden}
 .mh-browse{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px 10px;font-size:14px;color:var(--muted)}
 .mh-browse a{display:inline-block;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-weight:700;text-decoration:none}
 .mh-browse a:hover{border-color:#a99b8a}
+/* Show kinds on the opening screen */
+.mh-kinds{display:flex;gap:8px 14px;justify-content:center;flex-wrap:wrap;margin:4px 0 2px}
+.mh-kind{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid var(--line);border-radius:999px;background:var(--paper);font-weight:700;font-size:15px;cursor:pointer}
+.mh-kind input{width:18px;height:18px;accent-color:var(--accent);margin:0}
+.mh-kind:has(input:checked){border-color:var(--accent);background:#fbf0e9}
+.mh-kind-fixed{opacity:.85;cursor:default}
+.mh-kinds-note{text-align:center;color:var(--muted);margin:0 0 6px}
