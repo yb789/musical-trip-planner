@@ -89,7 +89,7 @@ ${links ? `<div class="links">${links}</div>` : ""}</div></div>`;
   const body = `<header><div class="wrap"><a class="brand" href="/">MUSICAL TRIP PLANNER</a>
 <h1>${esc(title)}</h1><p>${esc(cityLabel(plan.city))} · ${shows} performance${shows === 1 ? "" : "s"} over ${days} day${days === 1 ? "" : "s"}${plan.title ? " · " + esc(plan.title) : ""}</p></div></header>
 <main>
-<div class="cta"><a class="btn primary" href="/?plan=${esc(code)}">Open in planner</a><a class="btn" href="/">Make your own plan</a></div>
+<div class="cta"><a class="btn primary" href="/?plan=${esc(code)}">Open in planner</a><a class="btn" href="/plan/${esc(code)}/calendar.ics" download>Add to calendar</a><a class="btn" href="/">Make your own plan</a></div>
 ${dayHtml}
 <p class="note">Times and theatres were correct when this plan was shared; always check the ticket site before booking. Opening the plan in the planner copies it into your own browser, where you can change or export it.</p>
 </main>`;

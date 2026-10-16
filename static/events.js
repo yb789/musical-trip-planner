@@ -4,7 +4,7 @@
   var city=function(){try{var c=(window.state&&state.city)||document.body.dataset.city||'';if(!c){var m=location.pathname.match(/^\/(london|new-york)\b/);c=m?(m[1]==='new-york'?'broadway':'london'):''}return c==='new-york'?'broadway':c}catch(e){return ''}};
   function send(event,extra){try{var b=JSON.stringify(Object.assign({event:event,page:location.pathname,city:city()},extra||{}));if(navigator.sendBeacon){navigator.sendBeacon('/api/event',new Blob([b],{type:'application/json'}))}else{fetch('/api/event',{method:'POST',headers:{'Content-Type':'application/json'},body:b,keepalive:true}).catch(function(){})}}catch(e){}}
   window.mtpTrack=send;
-  var buttons={continueBtn:'dates_chosen',finishYes:'finished',excelBtn:'export_excel',pdfBtn:'export_pdf',shareBtn:'share_open',shareBtn2:'share_open'};
+  var buttons={continueBtn:'dates_chosen',finishYes:'finished',excelBtn:'export_excel',pdfBtn:'export_pdf',icsBtn:'export_ics',shareBtn:'share_open',shareBtn2:'share_open'};
   document.addEventListener('click',function(e){
     var t=e.target&&e.target.closest?e.target.closest('button,a'):null;if(!t)return;
     if(t.id&&buttons[t.id])send(buttons[t.id]);

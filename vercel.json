@@ -15,6 +15,10 @@
       "includeFiles": "data/**",
       "maxDuration": 60
     },
+    "api/plan-ics.js": {
+      "includeFiles": "data/**",
+      "maxDuration": 15
+    },
     "api/tm-link.js": {
       "includeFiles": "data/**",
       "maxDuration": 15
@@ -47,6 +51,10 @@
     {
       "source": "/",
       "destination": "/index.html"
+    },
+    {
+      "source": "/plan/:code/calendar.ics",
+      "destination": "/api/plan-ics?code=:code"
     },
     {
       "source": "/plan/:code",
