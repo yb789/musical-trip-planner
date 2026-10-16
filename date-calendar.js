@@ -37,7 +37,7 @@
       <div id="rangeParts" class="range-parts"></div>
       <div id="dateCountNote" class="date-count-note"></div>
       <div id="dateError" class="error"></div>
-      <div class="actions"><button id="continueBtn" class="primary">Continue to planner</button></div>
+      <div class="actions"><a class="back-start" href="#/start">← Back to the start screen</a><button id="continueBtn" class="primary">Continue to planner</button></div>
     </div>`;
 
   const warning = document.createElement('div');
@@ -57,6 +57,15 @@
 
   let picker = { month: null, activePart: 0, ranges: [{ start: '', end: '' }], split: false };
   let pendingPlan = null;
+
+  // NO_PAST_DATES_PATCH: trip planning is only allowed for today or future dates.
+  function localTodayISO(){
+    const now=new Date();
+    return iso(new Date(now.getFullYear(),now.getMonth(),now.getDate(),12));
+  }
+  function isPastTripDate(date){
+    return String(date||'') < localTodayISO();
+  }
 
   function monthDate() {
     return picker.month || new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12);
@@ -100,6 +109,9 @@
     const y = current.getFullYear();
     const m = current.getMonth();
     $('pickerMonthLabel').textContent = current.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    const todayForNav=parseISO(localTodayISO());
+    const firstAllowedMonth=new Date(todayForNav.getFullYear(),todayForNav.getMonth(),1,12);
+    $('pickerPrev').disabled=current<=firstAllowedMonth;
 
     const grid = $('pickerCalendar');
     grid.innerHTML = '';
@@ -119,6 +131,13 @@
       button.className = 'picker-day';
       button.textContent = n;
       button.title = fmt(date);
+      const past=isPastTripDate(date);
+      if(past){
+        button.classList.add('past-date');
+        button.disabled=true;
+        button.setAttribute('aria-disabled','true');
+        button.title=`${fmt(date)} — past date`;
+      }
 
       const active = picker.ranges[picker.activePart] || {};
       if (inRange(date, active)) button.classList.add('in-range');
@@ -126,7 +145,7 @@
       if (date === active.end) button.classList.add('range-end');
       if (picker.ranges.some((r, i) => i !== picker.activePart && inRange(date, r))) button.classList.add('other-range');
 
-      button.onclick = () => chooseDate(date);
+      if(!past) button.onclick = () => chooseDate(date);
       grid.appendChild(button);
     }
 
@@ -174,6 +193,11 @@
   }
 
   function chooseDate(date) {
+    if(isPastTripDate(date)){
+      $('dateError').textContent='Past dates cannot be selected.';
+      return;
+    }
+    $('dateError').textContent='';
     const range = picker.ranges[picker.activePart] || { start: '', end: '' };
     if (!range.start || range.end) {
       range.start = date;
@@ -202,6 +226,10 @@
     const ranges = normalizedRanges();
     if (ranges.length !== expected) {
       return { error: `Please choose both a start and end date for ${picker.split ? 'each trip part' : 'the trip'}.` };
+    }
+    const today=localTodayISO();
+    if(ranges.some(range=>range.start<today||range.end<today)){
+      return { error: 'Past dates cannot be selected. Please choose today or a future date.' };
     }
     if (ranges.length === 2 && ranges[1].start <= ranges[0].end) {
       return { error: 'The two trip parts overlap. Please choose two separate date ranges.' };
@@ -419,7 +447,10 @@
     picker.ranges = ranges.length ? [{ start: ranges[0].start, end: ranges[ranges.length - 1].end }] : [{ start: '', end: '' }];
     picker.split = false;
     picker.activePart = 0;
-    setMonthFromISO(picker.ranges[0]?.start || iso(new Date()));
+    const today=localTodayISO();
+    const firstUsable=picker.ranges.find(range=>range?.end>=today);
+    const initialMonth=firstUsable?.start&&firstUsable.start>=today?firstUsable.start:today;
+    setMonthFromISO(initialMonth);
     $('dateError').textContent = '';
     renderPicker();
     $('dateOverlay').classList.remove('hidden');
@@ -474,4 +505,29 @@
   renderPicker();
   renderCities();
   showSavedNotice();
+
+  // Shared itinerary import: /?plan=CODE copies a saved plan (from /plan/CODE) into this browser and opens it.
+  (async function importSharedPlan() {
+    const code = new URLSearchParams(location.search).get('plan');
+    if (!code || !/^[a-z0-9]{4,12}$/i.test(code)) return;
+    history.replaceState(null, '', location.pathname);
+    $('savedNotice').classList.add('hidden');
+    setLoading(true, 'Loading the shared plan…');
+    try {
+      const r = await fetch(`/api/plan?code=${encodeURIComponent(code.toLowerCase())}`);
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.plan) throw new Error(data.error || `Plan service returned ${r.status}`);
+      const plan = data.plan;
+      if (!['london', 'broadway'].includes(plan.city) || !Array.isArray(plan.ranges) || !plan.ranges.length) throw new Error('Plan is incomplete');
+      state.choices[plan.city] = { ...(state.choices[plan.city] || {}), ...plan.choices };
+      state.excluded[plan.city] = new Set();
+      $('startCity').value = plan.city;
+      await applyPlan({ city: plan.city, ranges: plan.ranges.map(r => ({ start: r.start, end: r.end })) });
+      setStatus(`Shared plan loaded: ${data.title || plan.city}. It is now saved in this browser and you can change or export it.`, 'ok');
+    } catch (e) {
+      console.error(e);
+      setLoading(false);
+      setStatus(`Could not load the shared plan: ${e.message}`, 'error');
+    }
+  })();
 })();
