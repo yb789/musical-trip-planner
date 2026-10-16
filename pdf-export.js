@@ -48,10 +48,15 @@
     doc.text(clean(`${cityLabel()}  |  ${range}`), 40, 64);
 
     const hasTickets = rows.some(r => r.bookingReference || r.seat || r.ticketMatch);
+    // "Tickets" column: a clickable SeatPlan link per row (the tracked affiliate link from selectedRows()).
+    const hasLinks = rows.some(r => /^https?:\/\//.test(r.ticket || ''));
     const head = ['Date', 'Session', 'Time', 'Musical', 'Theatre / Venue', 'Address'];
+    if (hasLinks) head.push('Tickets');
     if (hasTickets) head.push('Booking ref.', 'Seat', 'Ticket PDF check');
+    const linkCol = hasLinks ? 6 : -1;
     const body = rows.map(r => {
       const line = [r.date, r.session, r.time, r.musical, r.venue || '', r.address || ''];
+      if (hasLinks) line.push(/^https?:\/\//.test(r.ticket || '') ? 'Tickets on SeatPlan' : '');
       if (hasTickets) line.push(r.bookingReference || '', r.seat || '', r.ticketMatch || '');
       return line.map(clean);
     });
@@ -59,12 +64,18 @@
       head: [head], body, startY: 80, margin: { left: 40, right: 40 },
       styles: { font: 'helvetica', fontSize: 9, cellPadding: 5, overflow: 'linebreak', valign: 'top' },
       headStyles: { fillColor: [31, 75, 63], textColor: 255 },
-      alternateRowStyles: { fillColor: [247, 241, 231] }
+      alternateRowStyles: { fillColor: [247, 241, 231] },
+      columnStyles: linkCol >= 0 ? { [linkCol]: { textColor: [124, 45, 18], fontStyle: 'bold' } } : {},
+      didDrawCell: data => {
+        if (data.section !== 'body' || data.column.index !== linkCol) return;
+        const url = rows[data.row.index]?.ticket;
+        if (url && /^https?:\/\//.test(url)) doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url });
+      }
     });
     const y = Math.min((doc.lastAutoTable?.finalY || 80) + 20, doc.internal.pageSize.getHeight() - 30);
     doc.setFontSize(7);
     doc.setTextColor(110);
-    doc.text(doc.splitTextToSize('Made with musicaltripplanner.com. Ticket purchases are handled solely by third-party providers. Verify show, date, time and venue with your ticket provider before travelling.', doc.internal.pageSize.getWidth() - 80), 40, y);
+    doc.text(doc.splitTextToSize('Made with musicaltripplanner.com. Ticket purchases are handled solely by third-party providers. Verify show, date, time and venue with your ticket provider before travelling. Ticket links are affiliate links: we may earn a small commission if you book, at no extra cost to you.', doc.internal.pageSize.getWidth() - 80), 40, y);
     return doc;
   }
 
