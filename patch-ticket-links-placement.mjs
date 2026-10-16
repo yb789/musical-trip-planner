@@ -29,7 +29,7 @@ mustReplace(
 // 3. CSS: highlight the chosen card and lay out the button row. /* TICKET_LINKS_PLACEMENT_PATCH */
 mustReplace(
   '.pick.selected{background:var(--green);border-color:var(--green);color:white}',
-  '.pick.selected{background:var(--green);border-color:var(--green);color:white}/* TICKET_LINKS_PLACEMENT_PATCH */.show-card:has(.pick.selected){background:#f3f8f5;border-radius:12px;padding-left:8px;padding-right:8px;margin:0 -8px}.card-links{margin-top:2px}.card-links .ticket-link,.card-links .venue-link{margin:4px 6px 0 0}',
+  '.pick.selected{background:var(--green);border-color:var(--green);color:white}/* TICKET_LINKS_PLACEMENT_PATCH */.show-card:has(.pick.selected){background:#e3efe8;box-shadow:inset 0 0 0 2px var(--green);border-radius:12px;padding-left:8px;padding-right:8px;margin:0 -8px}.show-card:has(.pick.selected) .show-title::after{content:"✓ Selected";display:inline-block;margin-left:6px;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--green);color:#fff;vertical-align:middle;white-space:nowrap}.card-links{margin-top:2px}.card-links .ticket-link,.card-links .venue-link{margin:4px 6px 0 0}',
   'card css'
 );
 
