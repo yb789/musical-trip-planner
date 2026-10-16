@@ -23,10 +23,12 @@ body.mh-open{overflow:hidden}
 .mh-card .mh-icon{width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:#edf3f0}
 .mh-card.mh-feature .mh-icon{background:#fbf0e9}
 .mh-card-top{display:flex;justify-content:space-between;align-items:center}
-.mh-card-title{font:700 25px Georgia,serif}
-.mh-card-text{font-size:15px;line-height:1.5;color:var(--muted)}
-.mh-card-cta{font-weight:800;color:var(--green)}
-.mh-card.mh-feature .mh-card-cta{color:var(--accent)}
+.mh-card-title{font:700 20px Georgia,serif}
+.mh-card-text{font-size:13px;line-height:1.45;color:var(--muted)}
+/* 2026-10-16: the action is the highlight — a big filled button; the explanation is secondary. */
+.mh-card-cta{display:flex;align-items:center;justify-content:center;margin-top:auto;min-height:60px;padding:0 20px;border-radius:14px;background:var(--green);color:#fff;font-size:19px;font-weight:800;text-align:center;box-shadow:0 6px 18px rgba(31,75,63,.25)}
+.mh-card.mh-feature .mh-card-cta{background:var(--accent);box-shadow:0 6px 18px rgba(124,45,18,.25)}
+.mh-card:hover .mh-card-cta{filter:brightness(1.08)}
 .mh-chip{display:inline-block;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:#fbf0e9;color:var(--accent)}
 .mh-note{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:13px 16px;border-radius:14px;border:1px solid #e5c681;background:#fff7e6;color:#5a4410;font-size:14px;line-height:1.45}
 .mh-note b{color:#3d2e08}
@@ -86,7 +88,8 @@ body.mh-open{overflow:hidden}
   .mh-cities button{min-width:0;font-size:14px}
   .mh-paths,.mh-options,.mh-grid{grid-template-columns:1fr}
   .mh-card{padding:18px}
-  .mh-card-title{font-size:21px}
+  .mh-card-title{font-size:18px}
+  .mh-card-cta{min-height:54px;font-size:17px}
   .mh-footer{flex-direction:column;align-items:stretch}
   .mh-footer .mh-btn{width:100%}
 }
