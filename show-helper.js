@@ -137,10 +137,12 @@
     const saved = savedShowCount();
     const shortN = (hs.short[hs.city] || []).length;
     body.innerHTML = `<div class="mh-wrap">
-      <div class="mh-center"><h1 id="mhTitle" class="mh-h1" tabindex="-1">Where would you like to start?</h1><p class="mh-sub">Plan a trip to see musicals in London or New York.</p></div>
-      <div class="mh-cities" role="group" aria-label="City">
+      <div class="mh-center"><h1 id="mhTitle" class="mh-h1" tabindex="-1">Welcome to your Musical Planner</h1><p class="mh-sub">Plan a trip to see musicals in London or New York.</p></div>
+      <h2 class="mh-q" id="mhCityQ">Which city are you travelling to?</h2>
+      <div class="mh-cities" role="group" aria-labelledby="mhCityQ">
         ${CITIES.map(c => `<button type="button" data-act="city" data-city="${c}" aria-pressed="${hs.city === c}">${c === 'london' ? 'London · West End' : 'New York · Broadway'}</button>`).join('')}
       </div>
+      <h2 class="mh-q">What would you like to do?</h2>
       <div class="mh-paths">
         <button type="button" class="mh-card" data-act="know"><span class="mh-icon">${ICON_CAL}</span><span class="mh-card-title">I know my Musicals take me to the planner</span><span class="mh-card-text">Pick your dates and choose a matinee and an evening show for each day.</span><span class="mh-card-cta">Go to the planner →</span></button>
         <button type="button" class="mh-card mh-feature" data-act="help"><span class="mh-card-top"><span class="mh-icon">${ICON_SPARK}</span><span class="mh-chip">About 1 minute</span></span><span class="mh-card-title">Help me choose</span><span class="mh-card-text">Not sure what to see? Answer 4 quick questions and get a shortlist of shows that suit you.</span><span class="mh-card-cta">Start the helper →</span></button>

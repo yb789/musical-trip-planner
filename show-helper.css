@@ -13,6 +13,7 @@ body.mh-open{overflow:hidden}
 .mh-h1{margin:0;font:700 40px/1.15 Georgia,serif;outline:none}
 .mh-h2{margin:0;font:700 32px/1.2 Georgia,serif;outline:none}
 .mh-sub{margin:6px 0 0;color:var(--muted);font-size:16px;line-height:1.5}
+.mh-q{margin:4px 0 -8px;text-align:center;font:700 20px Georgia,serif;color:var(--ink)}
 .mh-cities{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .mh-cities button{min-width:190px;min-height:48px;font-weight:800;font-size:16px;border-radius:12px}
 .mh-cities button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -84,6 +85,7 @@ body.mh-open{overflow:hidden}
   .mh-h1{font-size:28px}
   .mh-h2{font-size:25px}
   .mh-sub{font-size:15px}
+  .mh-q{font-size:18px}
   .mh-cities{display:grid;grid-template-columns:1fr 1fr}
   .mh-cities button{min-width:0;font-size:14px}
   .mh-paths,.mh-options,.mh-grid{grid-template-columns:1fr}
