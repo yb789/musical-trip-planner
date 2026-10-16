@@ -36,15 +36,18 @@ function tmLinkHtml(c,d){
 function linkHtml(c){`;
 
 mustReplace('function linkHtml(c){', helpers, 'linkHtml start');
+// 2026-10-16 (Yuval): when SeatPlan or Ticketmaster sells the show, the "Theater / venue tickets"
+// button is dropped; it only remains for shows neither seller lists.
 mustReplace(
-  'if(ticketUrl)h+=`<a class="ticket-link" target="_blank" rel="noopener" href="${esc(ticketUrl)}">Tickets on SeatPlan ↗</a>`;',
-  'if(ticketUrl)h+=`<a class="ticket-link" target="_blank" rel="noopener sponsored" href="${esc(spTracked(ticketUrl,c.name))}">Tickets on SeatPlan ↗</a>`;h+=tmLinkHtml(c,state.active);',
-  'SeatPlan button'
+  'if(ticketUrl)h+=`<a class="ticket-link" target="_blank" rel="noopener" href="${esc(ticketUrl)}">Tickets on SeatPlan ↗</a>`;if(c.venueUrl||c.infoUrl)h+=`<a class="venue-link" target="_blank" rel="noopener" href="${esc(c.venueUrl||c.infoUrl)}">Theater / venue tickets ↗</a>`;return h}',
+  'if(ticketUrl)h+=`<a class="ticket-link" target="_blank" rel="noopener sponsored" href="${esc(spTracked(ticketUrl,c.name))}">Tickets on SeatPlan ↗</a>`;const tmHtml=tmLinkHtml(c,state.active);h+=tmHtml;const venueUrl=c.venueUrl||c.infoUrl;if(venueUrl&&!ticketUrl&&!tmHtml)h+=`<a class="venue-link" target="_blank" rel="noopener" href="${esc(venueUrl)}">Theater / venue tickets ↗</a>`;return h}',
+  'SeatPlan button + venue fallback'
 );
-// Ticketmaster blue so the two sellers are easy to tell apart.
+// Ticketmaster blue so the two sellers are easy to tell apart. In the selected card the seller
+// buttons are full-width blocks (2026-10-16); .card-links beats the ≤900px .ticket-link{font-size:12px} rule.
 mustReplace(
   '.ticket-link{background:var(--accent)}',
-  '.ticket-link{background:var(--accent)}.ticket-link.tm-link{background:#024ddf}',
+  '.ticket-link{background:var(--accent)}.ticket-link.tm-link{background:#024ddf}.card-links .ticket-link,.card-links .venue-link{display:block;width:100%;box-sizing:border-box;margin:8px 0 0;padding:12px 14px;font-size:15px;line-height:1.2;text-align:center;border-radius:10px}',
   'tm css'
 );
 
