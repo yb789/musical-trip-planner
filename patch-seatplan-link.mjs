@@ -12,10 +12,19 @@ const oldLink=`function linkHtml(c){if(!c)return'';let h='';if(c.ticketUrl)h+=\`
 const newLink=`function ticketLinkFor(c){
   const live=showMeta(c.name)||{};
   const liveUrl=String(live.ticketUrl||'');
-  if(/seatplan\\.com/i.test(liveUrl))return liveUrl;
+  const isShowPage=u=>/seatplan\\.com\\/(london|new-york)\\/[^/?#]+/i.test(u);
+  if(isShowPage(liveUrl))return liveUrl;
   const saved=String(c.ticketUrl||'');
-  if(/seatplan\\.com/i.test(saved))return saved;
-  return liveUrl||saved||(state.city==='london'?'https://seatplan.com/london/':'https://seatplan.com/new-york/');
+  if(isShowPage(saved))return saved;
+  return '';
+}
+// Where to buy when SeatPlan doesn't sell the show: the guide's official page, else the listing site's own booking link.
+function officialTicketFor(c){
+  const g=typeof window.mhGuideEntry==='function'?window.mhGuideEntry(c.name):null;
+  if(g&&g.tickets)return g.tickets;
+  const live=showMeta(c.name)||{};
+  const src=String(live.sourceTicketUrl||'');
+  return /^https?:\\/\\//.test(src)&&!/seatplan\\.com/i.test(src)?src:'';
 }
 function linkHtml(c){if(!c)return'';let h='';const ticketUrl=ticketLinkFor(c);if(ticketUrl)h+=\`<a class="ticket-link" target="_blank" rel="noopener" href="\${esc(ticketUrl)}">Tickets on SeatPlan ↗</a>\`;`;
 
@@ -26,8 +35,8 @@ if(!s.includes(oldLink)){
 s=s.replace(oldLink,newLink);
 
 // Export rows: use the SeatPlan link too.
-s=s.replaceAll("ticket:c.ticketUrl||loc.meta.ticketUrl||''","ticket:ticketLinkFor(c)");
-s=s.replaceAll("ticket:c.ticketUrl||''","ticket:ticketLinkFor(c)");
+s=s.replaceAll("ticket:c.ticketUrl||loc.meta.ticketUrl||''","ticket:ticketLinkFor(c)||officialTicketFor(c)");
+s=s.replaceAll("ticket:c.ticketUrl||''","ticket:ticketLinkFor(c)||officialTicketFor(c)");
 
 fs.writeFileSync(file,s);
 console.log('SeatPlan ticket link applied.');

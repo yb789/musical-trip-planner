@@ -40,14 +40,14 @@ mustReplace('function linkHtml(c){', helpers, 'linkHtml start');
 // button is dropped; it only remains for shows neither seller lists.
 mustReplace(
   'if(ticketUrl)h+=`<a class="ticket-link" target="_blank" rel="noopener" href="${esc(ticketUrl)}">Tickets on SeatPlan ↗</a>`;if(c.venueUrl||c.infoUrl)h+=`<a class="venue-link" target="_blank" rel="noopener" href="${esc(c.venueUrl||c.infoUrl)}">Theater / venue tickets ↗</a>`;return h}',
-  'if(ticketUrl)h+=`<a class="ticket-link" target="_blank" rel="noopener sponsored" href="${esc(spTracked(ticketUrl,c.name))}">Tickets on SeatPlan ↗</a>`;const tmHtml=tmLinkHtml(c,state.active);h+=tmHtml;const venueUrl=c.venueUrl||c.infoUrl;if(venueUrl&&!ticketUrl&&!tmHtml)h+=`<a class="venue-link" target="_blank" rel="noopener" href="${esc(venueUrl)}">Theater / venue tickets ↗</a>`;return h}',
+  'if(ticketUrl)h+=`<a class="ticket-link" target="_blank" rel="noopener sponsored" href="${esc(spTracked(ticketUrl,c.name))}">Tickets on SeatPlan ↗</a>`;const tmHtml=tmLinkHtml(c,state.active);h+=tmHtml;const official=(!ticketUrl&&!tmHtml)?officialTicketFor(c):\'\';if(official)h+=`<a class="ticket-link official" target="_blank" rel="noopener" href="${esc(official)}">Tickets ↗</a>`;const venueUrl=c.venueUrl||c.infoUrl;if(venueUrl&&!ticketUrl&&!tmHtml&&!official)h+=`<a class="venue-link" target="_blank" rel="noopener" href="${esc(venueUrl)}">Theater / venue tickets ↗</a>`;return h}',
   'SeatPlan button + venue fallback'
 );
 // Ticketmaster blue so the two sellers are easy to tell apart. In the selected card the seller
 // buttons are big blocks side by side, wrapping on narrow phones (2026-10-16); .card-links beats the ≤900px .ticket-link{font-size:12px} rule.
 mustReplace(
   '.ticket-link{background:var(--accent)}',
-  '.ticket-link{background:var(--accent)}.ticket-link.tm-link{background:#024ddf}.card-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.card-links .ticket-link,.card-links .venue-link{display:flex;align-items:center;justify-content:center;min-height:78px;flex:1 1 0;min-width:max-content;box-sizing:border-box;margin:0;padding:0 12px;font-size:14px;line-height:1.2;text-align:center;border-radius:12px;white-space:nowrap}',
+  '.ticket-link{background:var(--accent)}.ticket-link.tm-link{background:#024ddf}.ticket-link.official{background:#1f4b3f}.card-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.card-links .ticket-link,.card-links .venue-link{display:flex;align-items:center;justify-content:center;min-height:78px;flex:1 1 0;min-width:max-content;box-sizing:border-box;margin:0;padding:0 12px;font-size:14px;line-height:1.2;text-align:center;border-radius:12px;white-space:nowrap}',
   'tm css'
 );
 
@@ -64,7 +64,7 @@ mustReplace(
 // wrapper, both inlined), so the effective place is the wrapper's row mapping.
 mustReplace(
   "return {...row,bookingReference:choice?.bookingReference||'',seat:choice?.seat||'',ticketMatch:verification?verificationLabel(verification.status):''};",
-  "return {...row,ticket:spTracked(choice?ticketLinkFor(choice):row.ticket,row.musical,'export'),ticketmaster:(choice&&tmExport.get(tmExportKey(choice,row.date)))||'',bookingReference:choice?.bookingReference||'',seat:choice?.seat||'',ticketMatch:verification?verificationLabel(verification.status):''};",
+  "return {...row,ticket:spTracked(choice?(ticketLinkFor(choice)||officialTicketFor(choice)):row.ticket,row.musical,'export'),ticketmaster:(choice&&tmExport.get(tmExportKey(choice,row.date)))||'',bookingReference:choice?.bookingReference||'',seat:choice?.seat||'',ticketMatch:verification?verificationLabel(verification.status):''};",
   'export ticket link'
 );
 
