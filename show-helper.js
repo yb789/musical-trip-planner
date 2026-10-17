@@ -197,7 +197,7 @@
         const on = hs.hearts.has(g.id);
         const pills = [AUD_PILL[g.audience], ...(g.vibes || []).map(v => VIBE_PILL[v]), g.runtime].filter(Boolean);
         const meta = g.limitedRun && g.dates ? `<div class="mh-meta">Limited run · ${h(g.dates)}</div>` : '';
-        return `<article class="mh-show${on ? ' on' : ''}"><div class="mh-show-head"><div><div class="mh-show-title">${h(g.title)}</div><div class="mh-show-venue">${h(g.venue)}</div></div><button type="button" class="mh-heart" data-act="heart" data-id="${h(g.id)}" aria-pressed="${on}" aria-label="${on ? 'Remove' : 'Add'} ${h(g.title)} ${on ? 'from' : 'to'} your shortlist">${heart(on)}</button></div>
+        return `<article class="mh-show${on ? ' on' : ''}"><div class="mh-show-head"><div><div class="mh-show-title" translate="no">${h(g.title)}</div><div class="mh-show-venue" translate="no">${h(g.venue)}</div></div><button type="button" class="mh-heart" data-act="heart" data-id="${h(g.id)}" aria-pressed="${on}" aria-label="${on ? 'Remove' : 'Add'} ${h(g.title)} ${on ? 'from' : 'to'} your shortlist">${heart(on)}</button></div>
           <div class="mh-pills">${pills.map(p => `<span class="pill">${h(p)}</span>`).join('')}</div>
           <p class="mh-blurb">${h(g.blurb)}</p>
           <div class="mh-why"><b>Why it fits:</b> ${h(why.length ? why.join(' · ') : 'a popular pick in ' + cityName(hs.city))}</div>${meta}
