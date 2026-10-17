@@ -80,8 +80,8 @@ export function renderPlan(code, plan) {
       const part = g && g.parts === 2 ? (sess === "matinee" ? "Part One" : (new Date(d + "T12:00:00Z").getUTCDay() === 4 ? "Part One" : "Part Two")) : "";
       const partsNote = g && g.parts === 2 ? `<div class="parts-note">${esc(g.partsNote || "Two-part play: Part One and Part Two are separate tickets; you need both to see the whole story.")}</div>` : "";
       return `<div class="perf" data-kind="${kind}"><div class="icon">${sess === "matinee" ? "☀️" : "🌙"}</div><div>
-<b>${esc(c.name)}</b>${pill}${part ? ` <span class="part">${part}</span>` : ""}${partsNote}
-<div class="meta">${esc(sess === "matinee" ? "Matinee" : "Evening")}${c.time ? " · " + esc(c.time) : ""}${c.venue ? "<br>🎭 " + esc(c.venue) : ""}${c.address ? "<br>📍 " + esc(c.address) : ""}</div>
+<b translate="no">${esc(c.name)}</b>${pill}${part ? ` <span class="part">${part}</span>` : ""}${partsNote}
+<div class="meta">${esc(sess === "matinee" ? "Matinee" : "Evening")}${c.time ? " · " + esc(c.time) : ""}${c.venue ? '<br>🎭 <span translate="no">' + esc(c.venue) + "</span>" : ""}${c.address ? '<br>📍 <span translate="no">' + esc(c.address) + "</span>" : ""}</div>
 ${links ? `<div class="links">${links}</div>` : ""}</div></div>`;
     }).join("");
     return `<section class="day"><h2>${esc(fmtDay(d, { year: true }))}</h2>${perfs}</section>`;
