@@ -35,7 +35,7 @@ const js = `<script>/* CONCERTS_ONE_OFF */
 })();
 </script>`;
 
-const css = `.also-today{margin:14px 0 4px;padding:12px 14px;border:1px dashed var(--kind-concert,#0f6e78);border-radius:14px;background:color-mix(in srgb,var(--kind-concert,#0f6e78) 5%,#fff)}
+const css = `.also-today{grid-column:1/-1;margin:14px 0 4px;padding:12px 14px;border:1px dashed var(--kind-concert,#0f6e78);border-radius:14px;background:color-mix(in srgb,var(--kind-concert,#0f6e78) 5%,#fff)}
 .also-today h3{margin:0 0 2px;font:700 16px/1.3 Georgia,serif;color:var(--kind-concert,#0f6e78)}
 .also-today .also-sub{font:600 12px/1 Inter,system-ui,sans-serif;color:var(--muted);margin-left:6px}
 .also-today .also-note{margin:0 0 8px;font-size:12px;color:var(--muted)}
