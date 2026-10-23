@@ -10,7 +10,7 @@ const file = 'index.html';
 let s = fs.readFileSync(file, 'utf8');
 
 const helpers = `/* SHOW_KINDS_2 */
-const KIND_LABEL={play:'Play',spectacular:'Spectacular',family:'Family show'};
+const KIND_LABEL={play:'Play',spectacular:'Spectacular',concert:'Concert',family:'Family show'};
 function kindOfShow(n){try{return typeof window.mhKindOf==='function'?(window.mhKindOf(n)||'musical'):'musical'}catch(e){return 'musical'}}
 function kindPill(n){const k=kindOfShow(n);return KIND_LABEL[k]?\` <span class="kind-pill" data-kind="\${k}">\${KIND_LABEL[k]}</span>\`:''}
 function guideFor(n){try{return typeof window.mhGuideEntry==='function'?window.mhGuideEntry(n):null}catch(e){return null}}
@@ -53,9 +53,10 @@ for (const [from, to] of edits) {
   if (!count) { console.error('patch-show-kinds-2: anchor not found: ' + from.slice(0, 80)); process.exit(1); }
   s = s.split(from).join(to); n++;
 }
-const css = `:root{--kind-play:#4f46a0;--kind-spectacular:#b4560d;--kind-family:#1f7a4d}
+const css = `:root{--kind-play:#4f46a0;--kind-spectacular:#b4560d;--kind-concert:#0f6e78;--kind-family:#1f7a4d}
 .kind-pill{display:inline-block;margin-left:2px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;line-height:1.5;vertical-align:middle;color:#fff;white-space:nowrap}
-.kind-pill[data-kind=play]{background:var(--kind-play)}.kind-pill[data-kind=spectacular]{background:var(--kind-spectacular)}.kind-pill[data-kind=family]{background:var(--kind-family)}
+.kind-pill[data-kind=play]{background:var(--kind-play)}.kind-pill[data-kind=spectacular]{background:var(--kind-spectacular)}.kind-pill[data-kind=family]{background:var(--kind-family)}.kind-pill[data-kind=concert]{background:var(--kind-concert)}
+.show-card[data-kind=concert],.musical-row[data-kind=concert],.calendar-choice[data-kind=concert]{box-shadow:inset 4px 0 0 var(--kind-concert)}
 .show-card[data-kind=play],.musical-row[data-kind=play],.calendar-choice[data-kind=play]{box-shadow:inset 4px 0 0 var(--kind-play)}
 .show-card[data-kind=spectacular],.musical-row[data-kind=spectacular],.calendar-choice[data-kind=spectacular]{box-shadow:inset 4px 0 0 var(--kind-spectacular)}
 .show-card[data-kind=family],.musical-row[data-kind=family],.calendar-choice[data-kind=family]{box-shadow:inset 4px 0 0 var(--kind-family)}

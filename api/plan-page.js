@@ -1,7 +1,7 @@
 import { SITE, loadPlan, isValidCode, cityLabel, fmtDay, rangeLabel, planStats, planTitle } from "../lib/plans.js";
 import { guideEntryFor } from "../lib/site-pages.js";
 
-const KIND_LABEL = { play: "Play", spectacular: "Spectacular", family: "Family show" };
+const KIND_LABEL = { play: "Play", spectacular: "Spectacular", concert: "Concert", family: "Family show" };
 const CITY_SLUG = { london: "london", broadway: "new-york" };
 
 // Read-only page for a shared itinerary. Reached through the vercel.json rewrite  /plan/:code -> /api/plan-page?code=:code
@@ -13,7 +13,7 @@ const CSS = `
 :root{--bg:#f5f1e8;--paper:#fffdf8;--ink:#181818;--muted:#6b665f;--line:#ddd6ca;--accent:#7c2d12;--green:#1f4b3f;--gold:#d6a860}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}
 a{color:var(--accent)}
-:root{--kind-play:#4f46a0;--kind-spectacular:#b4560d;--kind-family:#1f7a4d}.kind-pill{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;vertical-align:middle;color:#fff}.kind-pill[data-kind=play]{background:var(--kind-play)}.kind-pill[data-kind=spectacular]{background:var(--kind-spectacular)}.kind-pill[data-kind=family]{background:var(--kind-family)}.perf[data-kind=play]{box-shadow:inset 4px 0 0 var(--kind-play)}.perf[data-kind=spectacular]{box-shadow:inset 4px 0 0 var(--kind-spectacular)}.perf[data-kind=family]{box-shadow:inset 4px 0 0 var(--kind-family)}.perf .part{font-size:12px;font-weight:600;color:var(--muted)}.parts-note{font-size:12px;line-height:1.4;color:#73520b;background:#fff2d9;border:1px solid #e5c681;border-radius:8px;padding:5px 8px;margin-top:6px}
+:root{--kind-play:#4f46a0;--kind-spectacular:#b4560d;--kind-concert:#0f6e78;--kind-family:#1f7a4d}.kind-pill[data-kind=concert]{background:var(--kind-concert)}.kind-pill{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;vertical-align:middle;color:#fff}.kind-pill[data-kind=play]{background:var(--kind-play)}.kind-pill[data-kind=spectacular]{background:var(--kind-spectacular)}.kind-pill[data-kind=family]{background:var(--kind-family)}.perf[data-kind=play]{box-shadow:inset 4px 0 0 var(--kind-play)}.perf[data-kind=spectacular]{box-shadow:inset 4px 0 0 var(--kind-spectacular)}.perf[data-kind=family]{box-shadow:inset 4px 0 0 var(--kind-family)}.perf[data-kind=concert]{box-shadow:inset 4px 0 0 var(--kind-concert)}.perf .part{font-size:12px;font-weight:600;color:var(--muted)}.parts-note{font-size:12px;line-height:1.4;color:#73520b;background:#fff2d9;border:1px solid #e5c681;border-radius:8px;padding:5px 8px;margin-top:6px}
 header{background:linear-gradient(135deg,#17130f,#35251c);color:#fffdf8;padding:28px 16px 30px}
 header .wrap{max-width:760px;margin:0 auto}
 header .brand{font:700 15px/1 Georgia,serif;color:var(--gold);letter-spacing:.04em;text-decoration:none}
