@@ -37,9 +37,10 @@
   const KNOWN_LBL = { classic: 'well-known shows', new: 'newer shows', either: 'any show' };
 
   // ---------- state ----------
-  // Show kinds the visitor wants in the planner. Musicals are always on; plays, spectaculars and
-  // family shows are opt-in on the opening screen and remembered in this browser.
-  const KINDS = [['musical', 'Musicals'], ['play', 'Big plays'], ['spectacular', 'Spectaculars & concerts'], ['family', 'Family shows']];
+  // Show kinds the visitor wants in the planner, remembered in this browser. On the opening screen
+  // musicals are always on and the rest are opt-in; the planner's category bar (patch-kind-bar.mjs)
+  // can switch any of them, musicals included, as long as one stays on (Yuval, 23 Oct 2026).
+  const KINDS = [['musical', 'Musicals'], ['play', 'Big plays'], ['spectacular', 'Spectaculars'], ['concert', 'Concerts'], ['family', 'Family shows']];
   const hs = { city: 'london', step: 0, ans: {}, short: { london: [], broadway: [] }, hearts: new Set(), screen: '', kinds: ['musical'] };
   try {
     const x = JSON.parse(localStorage.getItem(KEY) || '{}');
@@ -47,10 +48,16 @@
     else if (typeof state !== 'undefined' && CITIES.includes(state.city)) hs.city = state.city;
     if (x.ans && typeof x.ans === 'object') hs.ans = x.ans;
     for (const c of CITIES) if (Array.isArray(x.short?.[c])) hs.short[c] = x.short[c].filter(v => typeof v === 'string');
-    if (Array.isArray(x.kinds)) hs.kinds = ['musical', ...x.kinds.filter(k => k !== 'musical' && KINDS.some(([id]) => id === k))];
+    if (Array.isArray(x.kinds)) {
+      const k = [...new Set(x.kinds.filter(id => KINDS.some(([kid]) => kid === id)))];
+      // Before 23 Oct 2026 one box covered "Spectaculars & concerts": keep concerts on for those visitors.
+      if (x.kindsV !== 2 && k.includes('spectacular') && !k.includes('concert')) k.push('concert');
+      if (x.kindsV !== 2 && !k.includes('musical')) k.unshift('musical');
+      hs.kinds = k.length ? k : ['musical'];
+    }
   } catch {}
   function persist() {
-    try { localStorage.setItem(KEY, JSON.stringify({ city: hs.city, ans: hs.ans, short: hs.short, kinds: hs.kinds })); } catch {}
+    try { localStorage.setItem(KEY, JSON.stringify({ city: hs.city, ans: hs.ans, short: hs.short, kinds: hs.kinds, kindsV: 2 })); } catch {}
   }
 
   // ---------- matching live show names to guide entries ----------
@@ -74,11 +81,21 @@
     return (g && g.kind) || 'musical';
   }
   window.mhKindOf = kindOfName;
-  // Concerts share the "Spectaculars & concerts" box.
-  const boxOf = k => (k === 'concert' ? 'spectacular' : k);
-  window.mhKindAllowed = name => hs.kinds.includes(boxOf(kindOfName(name)));
-  window.mhConcertsAllowed = () => hs.kinds.includes('spectacular');
-  window.mhExtraKinds = () => hs.kinds.length > 1;
+  window.mhKindAllowed = name => hs.kinds.includes(kindOfName(name));
+  window.mhConcertsAllowed = () => hs.kinds.includes('concert');
+  window.mhKindList = () => KINDS.map(([id, label]) => ({ id, label, on: hs.kinds.includes(id) }));
+  // Used by the planner's category bar. Refuses to switch off the last category.
+  window.mhSetKind = (id, on) => {
+    if (!KINDS.some(([k]) => k === id)) return false;
+    const next = on ? [...new Set([...hs.kinds, id])] : hs.kinds.filter(k => k !== id);
+    if (!next.length) return false;
+    hs.kinds = KINDS.map(([k]) => k).filter(k => next.includes(k));
+    persist();
+    try { renderDays(); } catch {}
+    refreshPlanner();
+    return true;
+  };
+  window.mhExtraKinds = () => hs.kinds.some(k => k !== 'musical');
   window.mhGuideEntry = name => {
     const city = (typeof state !== 'undefined' && CITIES.includes(state.city)) ? state.city : hs.city;
     return entryForName(city, name) || entryForName(city === 'london' ? 'broadway' : 'london', name);
@@ -152,6 +169,8 @@
   }
 
   function renderWelcome() {
+    // The opening screen promises "Musicals are always included": make it true again here.
+    if (!hs.kinds.includes('musical')) { hs.kinds = ['musical', ...hs.kinds]; persist(); }
     const saved = savedShowCount();
     const shortN = (hs.short[hs.city] || []).length;
     body.innerHTML = `<div class="mh-wrap">
@@ -164,7 +183,7 @@
       <div class="mh-kinds" role="group" aria-labelledby="mhKindsQ">
         ${KINDS.map(([id, label]) => `<label class="mh-kind${id === 'musical' ? ' mh-kind-fixed' : ''}"><input type="checkbox" data-act="kind" data-kind="${id}" ${hs.kinds.includes(id) ? 'checked' : ''} ${id === 'musical' ? 'disabled' : ''}> ${label}</label>`).join('')}
       </div>
-      <p class="small mh-kinds-note">Musicals are always included. Tick the others to see them in the planner too — Harry Potter and the Cursed Child, Stranger Things, ABBA Voyage, concerts at London theatres and halls, and more.</p>
+      <p class="small mh-kinds-note">Musicals are always included. Tick the others to see them in the planner too — Harry Potter and the Cursed Child, Stranger Things, ABBA Voyage, concerts at London theatres and halls, and more. You can change this later at the top of each day.</p>
       <h2 class="mh-q">What would you like to do?</h2>
       <div class="mh-paths">
         <button type="button" class="mh-card" data-act="know"><span class="mh-icon">${ICON_CAL}</span><span class="mh-card-title">I know my Musicals take me to the planner</span><span class="mh-card-text">Pick your dates and choose a matinee and an evening show for each day.</span><span class="mh-card-cta">Go to the planner →</span></button>

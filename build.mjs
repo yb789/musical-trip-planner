@@ -27,7 +27,8 @@ const patches = [
   'patch-show-kinds-2.mjs',
   'patch-ticket-prices.mjs',
   'patch-ics.mjs',
-  'patch-concerts.mjs'
+  'patch-concerts.mjs',
+  'patch-kind-bar.mjs'
 ];
 
 for (const patch of patches) {
