@@ -3,6 +3,7 @@ import broadwayHandler from "./broadway2.js";
 import { applySeatPlanLinks } from "../lib/seatplan.js";
 import { findMissingPerformances } from "../lib/lbo-calendar.js";
 import { guideEntryFor } from "../lib/site-pages.js";
+import { londonConcerts } from "../lib/tm-concerts.js";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const cache = new Map();
@@ -177,8 +178,10 @@ export default async function handler(req,res){
   if(cached&&Date.now()-cached.at<CACHE_TTL_MS)return json(res,200,cached.data);
 
   try{
-    const result=await scrapeLondonRange(start,end);
-    const data={city:"london",start:iso(start),end:iso(end),refreshedAt:new Date().toISOString(),...result};
+    // Concerts (Ticketmaster) ride beside the musicals schedule, never inside it: the planner shows
+    // them only when the visitor ticks "Spectaculars & concerts"; a failure there never fails the search.
+    const [result,concerts]=await Promise.all([scrapeLondonRange(start,end),londonConcerts(iso(start),iso(end)).catch(()=>({shows:[],schedule:{}}))]);
+    const data={city:"london",start:iso(start),end:iso(end),refreshedAt:new Date().toISOString(),...result,concerts:{shows:concerts.shows||[],schedule:concerts.schedule||{}}};
     cache.set(key,{at:Date.now(),data});
     return json(res,200,data);
   }catch(err){

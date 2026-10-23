@@ -74,7 +74,7 @@
       // Kind column coloured like the planner (play purple, spectacular amber, family green).
       didParseCell: data => {
         if (data.section !== 'body' || data.column.index !== 4) return;
-        const col = { Play: [79, 70, 160], Spectacular: [180, 86, 13], 'Family show': [31, 122, 77] }[String(data.cell.raw || '')];
+        const col = { Play: [79, 70, 160], Spectacular: [180, 86, 13], Concert: [15, 110, 120], 'Family show': [31, 122, 77] }[String(data.cell.raw || '')];
         if (col) { data.cell.styles.textColor = col; data.cell.styles.fontStyle = 'bold'; }
       },
       didDrawCell: data => {

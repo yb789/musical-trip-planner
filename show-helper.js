@@ -74,7 +74,10 @@
     return (g && g.kind) || 'musical';
   }
   window.mhKindOf = kindOfName;
-  window.mhKindAllowed = name => hs.kinds.includes(kindOfName(name));
+  // Concerts share the "Spectaculars & concerts" box.
+  const boxOf = k => (k === 'concert' ? 'spectacular' : k);
+  window.mhKindAllowed = name => hs.kinds.includes(boxOf(kindOfName(name)));
+  window.mhConcertsAllowed = () => hs.kinds.includes('spectacular');
   window.mhExtraKinds = () => hs.kinds.length > 1;
   window.mhGuideEntry = name => {
     const city = (typeof state !== 'undefined' && CITIES.includes(state.city)) ? state.city : hs.city;
@@ -161,7 +164,7 @@
       <div class="mh-kinds" role="group" aria-labelledby="mhKindsQ">
         ${KINDS.map(([id, label]) => `<label class="mh-kind${id === 'musical' ? ' mh-kind-fixed' : ''}"><input type="checkbox" data-act="kind" data-kind="${id}" ${hs.kinds.includes(id) ? 'checked' : ''} ${id === 'musical' ? 'disabled' : ''}> ${label}</label>`).join('')}
       </div>
-      <p class="small mh-kinds-note">Musicals are always included. Tick the others to see them in the planner too — Harry Potter and the Cursed Child, Stranger Things, ABBA Voyage and more.</p>
+      <p class="small mh-kinds-note">Musicals are always included. Tick the others to see them in the planner too — Harry Potter and the Cursed Child, Stranger Things, ABBA Voyage, concerts at London theatres and halls, and more.</p>
       <h2 class="mh-q">What would you like to do?</h2>
       <div class="mh-paths">
         <button type="button" class="mh-card" data-act="know"><span class="mh-icon">${ICON_CAL}</span><span class="mh-card-title">I know my Musicals take me to the planner</span><span class="mh-card-text">Pick your dates and choose a matinee and an evening show for each day.</span><span class="mh-card-cta">Go to the planner →</span></button>

@@ -289,6 +289,7 @@
       const showsByName = new Map();
       const schedule = {};
       const sources = new Set();
+      const oneOffs = {};
       let performanceCount = 0;
 
       for (let i = 0; i < chunks.length; i++) {
@@ -322,12 +323,48 @@
           }
         }
         for (const source of data.sources || []) sources.add(source);
+
+        // Concerts (London, from Ticketmaster): a run becomes a normal show of kind "concert" (shown when
+        // the visitor ticks "Spectaculars & concerts"); a one-night event goes to the read-only
+        // "Also on this day" list and is never a planner card.
+        const concerts = data.concerts && typeof data.concerts === 'object' ? data.concerts : null;
+        if (concerts) {
+          const oneOffNames = new Set();
+          for (const show of concerts.shows || []) {
+            if (!show || !show.name) continue;
+            if (show.oneOff) { oneOffNames.add(show.name); continue; }
+            const key = String(show.name).toLowerCase();
+            if (!showsByName.has(key)) showsByName.set(key, { ...show, kind: 'concert', sourceTicketUrl: show.ticketUrl || '' });
+          }
+          const venueOf = new Map((concerts.shows || []).map(s => [s.name, s.venue || '']));
+          for (const [date, entries] of Object.entries(concerts.schedule || {})) {
+            if (!isTripDate(date)) continue;
+            for (const item of Array.isArray(entries) ? entries : []) {
+              const [name, time, meta] = item || [];
+              if (!name || !time) continue;
+              if (oneOffNames.has(name)) {
+                const list = oneOffs[date] || (oneOffs[date] = []);
+                if (!list.some(x => x.name === name && x.time === time)) list.push({ name, time, venue: venueOf.get(name) || '', from: meta?.from || '', url: meta?.url || '' });
+                continue;
+              }
+              if (!schedule[date]) schedule[date] = [];
+              if (schedule[date].some(([n, t]) => n === name && t === time)) continue;
+              // Each concert performance already has its tracked Ticketmaster page: seed the planner's
+              // Ticketmaster button cache so the card (and the exports) use it without a /api/tm-link call.
+              if (meta && meta.url && typeof tmLinks !== 'undefined') try { tmLinks.set([state.city, name, date, time].join('|'), meta.url); } catch (e) {}
+              // No price on the card: the day note says prices come from London Box Office, and these are Ticketmaster's.
+              schedule[date].push([name, time]);
+              performanceCount++;
+            }
+          }
+          if ((concerts.shows || []).length) sources.add('Ticketmaster (concerts)');
+        }
       }
 
       for (const date of days()) if (!schedule[date]) schedule[date] = [];
-      state.data[state.city] = { shows: [...showsByName.values()], schedule };
-      const musicalCount = [...showsByName.values()].filter(s => !s.kind || s.kind === 'musical').length, extraCount = showsByName.size - musicalCount;
-      setStatus(`Live schedule refreshed: ${musicalCount} musicals${extraCount ? ` and ${extraCount} plays, spectaculars or family shows` : ''}, ${performanceCount} performance slots found across ${count} selected day${count === 1 ? '' : 's'}. ${[...sources].join(' + ')}`, 'ok');
+      state.data[state.city] = { shows: [...showsByName.values()], schedule, oneOffs };
+      const musicalCount = [...showsByName.values()].filter(s => !s.kind || s.kind === 'musical').length, extraCount = [...showsByName.values()].filter(s => s.kind && s.kind !== 'musical' && (typeof window.mhKindAllowed !== 'function' || window.mhKindAllowed(s.name))).length;
+      setStatus(`Live schedule refreshed: ${musicalCount} musicals${extraCount ? ` and ${extraCount} plays, spectaculars, concerts or family shows` : ''}, ${performanceCount} performance slots found across ${count} selected day${count === 1 ? '' : 's'}. ${[...sources].join(' + ')}`, 'ok');
       renderAll();
     } catch (error) {
       console.error(error);
