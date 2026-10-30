@@ -295,8 +295,18 @@
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
         $('loadingText').textContent = `Searching ${cityLabel()} · ${fmt(chunk.start, { day: 'numeric', month: 'short' })} – ${fmt(chunk.end, { day: 'numeric', month: 'short', year: 'numeric' })}${chunks.length > 1 ? ` · block ${i + 1} of ${chunks.length}` : ''}…`;
-        const response = await fetch(`/api/schedule?city=${encodeURIComponent(state.city)}&start=${chunk.start}&end=${chunk.end}`);
-        const data = await response.json().catch(() => ({}));
+        // One automatic retry after a server error (the listing sites sometimes fail for a moment);
+        // the retry URL differs so no cached copy of the failed answer can be served.
+        let response, data;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (attempt) {
+            $('loadingText').textContent = `Still searching ${cityLabel()}: the schedule site was slow, trying again…`;
+            await new Promise(r => setTimeout(r, 2500));
+          }
+          response = await fetch(`/api/schedule?city=${encodeURIComponent(state.city)}&start=${chunk.start}&end=${chunk.end}${attempt ? `&retry=${Date.now()}` : ''}`);
+          data = await response.json().catch(() => ({}));
+          if (response.ok || response.status < 500) break;
+        }
         if (!response.ok) throw new Error(data.error || `Schedule service returned ${response.status}`);
         if (!Array.isArray(data.shows) || !data.schedule) throw new Error('Incomplete schedule data');
 
@@ -370,6 +380,10 @@
       console.error(error);
       setStatus(`Live search failed: ${error.message}`, 'error');
       renderAll();
+      // Say so where the shows would be, with a retry, instead of leaving the lists blank.
+      const box = `<div class="load-failed"><b>We couldn't load the ${state.city === 'london' ? 'West End' : 'Broadway'} schedule just now.</b><span>The ticket listing site didn't answer. This usually clears within a minute.</span><button type="button" class="primary load-retry">Try again</button></div>`;
+      for (const id of ['matineeList', 'eveningList']) { const el = $(id); if (el) el.innerHTML = box; }
+      document.querySelectorAll('.load-retry').forEach(b => { b.onclick = () => loadSchedule(); });
     } finally {
       setLoading(false);
     }

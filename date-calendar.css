@@ -39,3 +39,7 @@
 .picker-day.past-date,.picker-day:disabled{opacity:.35;background:#f1f1f1;color:#777;border-color:#ddd;cursor:not-allowed;box-shadow:none}
 .picker-day.past-date:hover,.picker-day:disabled:hover{border-color:#ddd}
 .range-picker-head button:disabled{opacity:.35;cursor:not-allowed}
+
+/* Schedule could not be loaded (30 Oct 2026) */
+.load-failed{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:14px 16px;border:1px solid #e2b5aa;border-radius:12px;background:#fff6f3;color:#5a2116;font-size:14px}
+.load-failed .load-retry{min-height:40px;padding:0 18px;font-weight:800}
