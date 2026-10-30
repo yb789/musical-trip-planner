@@ -57,7 +57,7 @@
   function ensureLeaveOverlay(){
     let o=document.getElementById('leaveOverlay');if(o)return o;
     o=document.createElement('div');o.id='leaveOverlay';o.className='overlay hidden';
-    o.innerHTML='<div class="modal leave-modal" role="dialog" aria-modal="true" aria-labelledby="leaveTitle"><h2 id="leaveTitle">Buy tickets</h2><div id="leaveShow" class="leave-show"></div><div id="leaveSellers" class="leave-sellers"></div><p class="small leave-note">The ticket site opens in a <b>new tab</b>. Your plan stays saved here. When you have booked, come back to this tab and press <b>Mark as booked</b>.</p><div class="actions"><button type="button" id="leaveStay">Stay and keep planning</button></div></div>';
+    o.innerHTML='<div class="modal leave-modal" role="dialog" aria-modal="true" aria-labelledby="leaveTitle"><h2 id="leaveTitle">Buy tickets</h2><div id="leaveShow" class="leave-show"></div><div id="leaveSellers" class="leave-sellers"></div><p class="small leave-note">The ticket site opens in a <b>new tab</b>; this tab with your plan stays open behind it. When you have booked, switch back to this tab and press <b>Mark as booked</b>. If you lose it, just open <b>musicaltripplanner.com</b> again: your plan reopens where you left it.</p><div class="actions"><button type="button" id="leaveStay">Stay and keep planning</button></div></div>';
     document.body.appendChild(o);
     o.addEventListener('click',e=>{if(e.target===o)closeLeave()});
     o.querySelector('#leaveStay').onclick=closeLeave;
@@ -177,4 +177,67 @@
     if(b){e.preventDefault();openLeave(b.dataset.date,b.dataset.session,null)}
   });
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLeave()});
+
+  // ---- Getting back to the plan (2026-10-30, Yuval) ----
+  // The planner keeps chosen shows but not the trip dates, so coming back (Back button, a phone that
+  // opened the ticket site in place, reopening the site) used to land on the opening screen and ask
+  // for dates again. The trip is now remembered; within 6 hours of leaving from "Book your tickets"
+  // the site reopens straight into that list, otherwise the date dialog offers "Resume my trip".
+  const TRIP_KEY='musicalPlannerTrip',BOOKING_RESUME_MS=6*60*60*1000;
+  function readTrip(){try{const t=JSON.parse(localStorage.getItem(TRIP_KEY)||'null');return t&&t.city&&/^\d{4}-\d{2}-\d{2}$/.test(t.start||'')&&/^\d{4}-\d{2}-\d{2}$/.test(t.end||'')?t:null}catch(e){return null}}
+  function writeTrip(extra){
+    if(!state.start||!state.end||!state.city)return;
+    try{const prev=readTrip()||{};const same=prev.city===state.city&&prev.start===state.start&&prev.end===state.end;
+      localStorage.setItem(TRIP_KEY,JSON.stringify({city:state.city,start:state.start,end:state.end,booking:same?!!prev.booking:false,at:same?prev.at||0:0,...(extra||{})}))}catch(e){}
+  }
+  function tripChoices(t){const all=(state.choices&&state.choices[t.city])||{};return Object.keys(all).filter(d=>d>=t.start&&d<=t.end&&all[d]&&(all[d].matinee||all[d].evening)).length}
+  const todayISO=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};
+  function resumable(t){return t&&t.end>=todayISO()&&tripChoices(t)>0}
+  async function resumeTrip(t,openBooking){
+    if(typeof window.mhApplyPlan!=='function')return;
+    await window.mhApplyPlan({city:t.city,ranges:[{start:t.start,end:t.end}]});
+    if(location.hash!=='#/plan')location.hash='#/plan';
+    if(openBooking){
+      try{$('finishConfirm').classList.add('hidden');$('exportPanel').classList.remove('hidden');$('finishOverlay').classList.remove('hidden')}catch(e){}
+      renderBookList();watchTicketModal();
+      try{Promise.resolve(tmLinksForExport()).then(renderBookList,renderBookList)}catch(e){}
+    }
+  }
+
+  // Remember the trip whenever the day strip is drawn (dates chosen, shows chosen…).
+  const prevRenderDays=renderDays;
+  renderDays=function(){prevRenderDays.apply(this,arguments);writeTrip()};
+  // Opening "Book your tickets" marks the trip for automatic reopening; going back to the planner clears that.
+  const fy=document.getElementById('finishYes');
+  if(fy){const p=fy.onclick;fy.onclick=function(e){if(p)p.call(this,e);writeTrip({booking:true,at:Date.now()})}}
+  const rb=document.getElementById('returnBtn');
+  if(rb){const p=rb.onclick;rb.onclick=function(e){if(p)p.call(this,e);writeTrip({booking:false,at:0})}}
+
+  // "Resume my trip" in the date dialog's saved-selection notice.
+  function addResumeButton(t){
+    const notice=document.getElementById('savedNotice');if(!notice||document.getElementById('resumeTripBtn'))return;
+    const actions=notice.querySelector('.actions');if(!actions)return;
+    const city=t.city==='london'?'London':'Broadway';
+    const range=fmt(t.start,{day:'numeric',month:'short'})+(t.end!==t.start?' – '+fmt(t.end,{day:'numeric',month:'short'}):'');
+    const b=document.createElement('button');b.id='resumeTripBtn';b.type='button';b.className='primary';
+    b.textContent=`Resume my trip: ${city}, ${range}`;
+    b.onclick=()=>resumeTrip(t,false);
+    actions.prepend(b);
+    const clear=document.getElementById('savedClear');
+    if(clear)clear.addEventListener('click',()=>{b.remove();try{localStorage.removeItem(TRIP_KEY)}catch(e){}});
+    const keep=document.getElementById('savedKeep');
+    if(keep)keep.textContent='Keep them, pick new dates';
+  }
+
+  (async function onLoad(){
+    const params=new URLSearchParams(location.search);
+    if(params.has('plan')||params.has('city')||window.MH_SHARED_PLAN)return; // shared plans and show-page links win
+    const t=readTrip();
+    if(!resumable(t))return;
+    if(t.booking&&Date.now()-(t.at||0)<BOOKING_RESUME_MS){
+      try{await resumeTrip(t,true)}catch(e){console.error(e)}
+      return;
+    }
+    addResumeButton(t);
+  })();
 })();
