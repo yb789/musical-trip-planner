@@ -29,7 +29,7 @@ mustReplace(
 // 2. Finish planning panel: the checklist above the export buttons.
 mustReplace(
   '<div id="exportPanel" class="hidden"><h2>Your schedule is ready</h2><p>Export your selected schedule.</p><div class="actions">',
-  '<div id="exportPanel" class="hidden"><h2>Your plan is ready</h2><h3>Book your tickets</h3><p class="book-intro">Each ticket site opens in a new tab, and your plan stays saved here. Come back and tick off each show as you book it.</p><div id="bookList"></div><h3>Save or share your plan</h3><p class="book-intro">No rush to book everything now: the PDF and Excel files include the ticket links (SeatPlan, Ticketmaster) for your shows, so you can book straight from them later.</p><div class="actions">',
+  '<div id="exportPanel" class="hidden"><h2>Your plan is ready</h2><h3>Book your tickets</h3><p class="book-intro">Each ticket site opens in a new tab, and your plan stays saved here. Come back and tick off each show as you book it.</p><div id="bookList"></div><h3>Save or share your plan</h3><p class="book-intro"><b>No rush to book everything now: the PDF and Excel files include the ticket links (SeatPlan, Ticketmaster) for your shows, so you can book straight from them later.</b></p><div class="actions">',
   'export panel'
 );
 mustReplace(
