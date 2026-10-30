@@ -49,7 +49,7 @@
     let h='';
     if(booked)h+='<span class="card-booked">✓ Booked</span>';
     if(list.length)h+=`<button type="button" class="buy-link" data-date="${esc(d)}" data-session="${esc(session)}">${booked?'Ticket sites':'Buy tickets'} ↗</button>`;
-    if(!booked)h+='<span class="buy-hint">or book them all when you finish planning</span>';
+    if(!booked&&list.length)h+='<span class="buy-hint">or book them all when you finish planning</span>';
     return h;
   };
 
