@@ -1,4 +1,4 @@
-import { CITIES, renderShow, renderCity, renderMatinees, renderGuide, renderGuidesIndex, renderAbout, notFound } from "../lib/site-pages.js";
+import { CITIES, renderShow, renderCity, renderMatinees, renderGuide, renderGuidesIndex, renderAbout, renderPrivacy, notFound } from "../lib/site-pages.js";
 import { loadSchedule } from "../lib/schedule-data.js";
 
 // Indexable pages, reached through vercel.json rewrites:
@@ -40,6 +40,7 @@ export default async function handler(req, res) {
       if (check) res.setHeader("X-Robots-Tag", "noindex");
     }
     else if (type === "about") html = renderAbout();
+    else if (type === "privacy") html = renderPrivacy();
     else if (type === "guide" && !slug) html = renderGuidesIndex();
     else if (type === "guide" && /^[a-z0-9-]{1,80}$/.test(slug)) html = renderGuide(slug);
     if (!html) {

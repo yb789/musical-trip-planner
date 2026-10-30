@@ -7,6 +7,7 @@ import { loadPlan, isValidCode, planStats, showsWord, cityShort, rangeLabel } fr
 // Generates the site's share image and app icons on demand (no binary files in the repo).
 //   /api/og                  -> 1200x630 Open Graph / Twitter card image (PNG)
 //   /api/og?icon=180         -> square PNG icon (favicon / apple-touch-icon / manifest)
+//   /api/og?icon=512&maskable=1 -> full-bleed icon for Android adaptive icons / Google Play
 //   /api/og?plan=abc123      -> share image for one saved itinerary (used by /plan/<code>)
 // Runs on the Node runtime: satori (HTML-like element tree -> SVG) + resvg (SVG -> PNG).
 // Fonts are fetched once from Google Fonts and cached in memory for the life of the instance.
@@ -108,11 +109,13 @@ export function planImage(plan) {
   );
 }
 
-export function iconImage(size) {
-  const band = Math.round(size * 0.2);
-  return h("div", { width: size, height: size, display: "flex", flexDirection: "column", backgroundColor: INK, borderRadius: Math.round(size * 0.22), overflow: "hidden" },
+// maskable = full-bleed square (no rounded corners) with the "M" inside the central safe zone,
+// for Android adaptive icons (manifest purpose "maskable") and the Google Play store icon.
+export function iconImage(size, maskable = false) {
+  const band = Math.round(size * (maskable ? 0.24 : 0.2));
+  return h("div", { width: size, height: size, display: "flex", flexDirection: "column", backgroundColor: INK, borderRadius: maskable ? 0 : Math.round(size * 0.22), overflow: "hidden" },
     curtain(size, band, 8),
-    h("div", { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: GOLD, fontFamily: "serif", fontWeight: 700, fontSize: Math.round(size * 0.62), lineHeight: 1 }, "M")
+    h("div", { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: GOLD, fontFamily: "serif", fontWeight: 700, fontSize: Math.round(size * (maskable ? 0.46 : 0.62)), lineHeight: 1, paddingBottom: maskable ? Math.round(size * 0.06) : 0 }, "M")
   );
 }
 
@@ -121,7 +124,7 @@ export default async function handler(req, res) {
     const icon = Number((req.query && req.query.icon) || 0);
     const planCode = String((req.query && req.query.plan) || "").toLowerCase();
     let element = shareImage(), w = 1200, hgt = 630;
-    if (icon >= 16 && icon <= 1024) { element = iconImage(icon); w = hgt = icon; }
+    if (icon >= 16 && icon <= 1024) { element = iconImage(icon, String((req.query && req.query.maskable) || "") === "1"); w = hgt = icon; }
     else if (planCode) {
       try {
         const found = isValidCode(planCode) ? await loadPlan(planCode) : null;

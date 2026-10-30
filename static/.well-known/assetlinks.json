@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.musicaltripplanner.app",
+      "sha256_cert_fingerprints": [
+        "D3:3A:1C:9A:0D:2B:09:67:B0:50:30:B8:85:32:9E:9E:98:A7:72:13:2E:9C:40:7A:A0:78:83:21:19:BB:02:E1"
+      ]
+    }
+  }
+]
