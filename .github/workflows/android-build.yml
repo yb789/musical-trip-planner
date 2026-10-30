@@ -15,9 +15,6 @@ name: Android app build
 
 on:
   workflow_dispatch:
-  push:
-    branches: [android-build]
-    paths: ['android/**', '.github/workflows/android-build.yml']
 
 permissions:
   contents: read
@@ -89,7 +86,7 @@ jobs:
           fi
           ls -la *.aab *.apk
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: musical-trip-planner-android-${{ github.run_number }}
           path: |

@@ -13,8 +13,8 @@
   "backgroundColor": "#F5F1E8",
   "enableNotifications": false,
   "startUrl": "/",
-  "iconUrl": "https://musicaltripplanner.com/api/og?icon=512",
-  "maskableIconUrl": "https://musicaltripplanner.com/api/og?icon=512",
+  "iconUrl": "https://musicaltripplanner.com/icons/icon-512.png",
+  "maskableIconUrl": "https://musicaltripplanner.com/icons/maskable-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./upload-key.jks",
@@ -27,13 +27,13 @@
       "name": "West End musicals",
       "shortName": "West End",
       "url": "https://musicaltripplanner.com/london/",
-      "chosenIconUrl": "https://musicaltripplanner.com/api/og?icon=192"
+      "chosenIconUrl": "https://musicaltripplanner.com/icons/icon-192.png"
     },
     {
       "name": "Broadway musicals",
       "shortName": "Broadway",
       "url": "https://musicaltripplanner.com/new-york/",
-      "chosenIconUrl": "https://musicaltripplanner.com/api/og?icon=192"
+      "chosenIconUrl": "https://musicaltripplanner.com/icons/icon-192.png"
     }
   ],
   "generatorApp": "bubblewrap-cli",
