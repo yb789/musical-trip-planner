@@ -39,7 +39,7 @@
     if(list===null){wrap.innerHTML='';hint.innerHTML=DEFAULT_HINT;return}
     if(!list.length){
       wrap.innerHTML='';
-      hint.innerHTML='<b class="all-days-done">✓ You have shows on all selected dates.</b><br>Book your tickets, export or share your plan.';
+      hint.innerHTML='<b class="all-days-done">✓ You have shows on all selected dates.</b><br>Press <b>Finish planning</b> to book all your tickets in one place, or to export and share your plan.';
       return;
     }
     const n=list.length;
