@@ -1,0 +1,55 @@
+{
+  "packageId": "com.musicaltripplanner.app",
+  "host": "musicaltripplanner.com",
+  "name": "Musical Trip Planner",
+  "launcherName": "Musical Trip",
+  "display": "standalone",
+  "themeColor": "#17130F",
+  "themeColorDark": "#17130F",
+  "navigationColor": "#17130F",
+  "navigationColorDark": "#17130F",
+  "navigationDividerColor": "#17130F",
+  "navigationDividerColorDark": "#17130F",
+  "backgroundColor": "#F5F1E8",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://musicaltripplanner.com/icons/icon-512.png",
+  "maskableIconUrl": "https://musicaltripplanner.com/icons/maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./upload-key.jks",
+    "alias": "upload"
+  },
+  "appVersionCode": 1,
+  "appVersion": "1.0.0",
+  "shortcuts": [
+    {
+      "name": "West End musicals",
+      "shortName": "West End",
+      "url": "https://musicaltripplanner.com/london/",
+      "chosenIconUrl": "https://musicaltripplanner.com/icons/icon-192.png"
+    },
+    {
+      "name": "Broadway musicals",
+      "shortName": "Broadway",
+      "url": "https://musicaltripplanner.com/new-york/",
+      "chosenIconUrl": "https://musicaltripplanner.com/icons/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://musicaltripplanner.com/site.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://musicaltripplanner.com/",
+  "minSdkVersion": 24,
+  "orientation": "default",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": []
+}
