@@ -24,21 +24,21 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       BUBBLEWRAP_VERSION: 1.27.0
       BUILD_TOOLS: 36.1.0
       PLATFORM: android-36
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -88,7 +88,7 @@ jobs:
           fi
           ls -la *.aab *.apk
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: musical-trip-planner-android-${{ github.run_number }}
           path: |
