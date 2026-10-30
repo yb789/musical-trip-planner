@@ -11,7 +11,7 @@ const cache = new Map();
 function json(res,status,body){
   res.status(status);
   res.setHeader("Content-Type","application/json; charset=utf-8");
-  res.setHeader("Cache-Control","s-maxage=300, stale-while-revalidate=600");
+  res.setHeader("Cache-Control",status>=400?"no-store":"s-maxage=300, stale-while-revalidate=600");
   res.end(JSON.stringify(body));
 }
 

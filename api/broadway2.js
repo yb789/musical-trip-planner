@@ -8,7 +8,9 @@ const cache = new Map();
 function json(res,status,body){
   res.status(status);
   res.setHeader("Content-Type","application/json; charset=utf-8");
-  res.setHeader("Cache-Control","s-maxage=300, stale-while-revalidate=600");
+  // Errors must never be cached by the CDN: one bad fetch from broadway.com used to blank the
+  // planner for everyone choosing the same dates for up to 15 minutes (30 Oct 2026).
+  res.setHeader("Cache-Control",status>=400?"no-store":"s-maxage=300, stale-while-revalidate=600");
   res.end(JSON.stringify(body));
 }
 
@@ -137,7 +139,13 @@ async function mapLimit(items,limit,fn){
   return out;
 }
 
-async function scrape(start,end){
+// Last list of shows that was discovered successfully (per function instance). broadway.com sometimes
+// answers the listing pages with an empty or bot-check page; the show list barely changes from hour to
+// hour, so the previous good list is used instead of failing the whole search.
+let lastCandidates=null; // {at, list}
+const LAST_GOOD_MS=24*60*60*1000;
+
+async function discoverCandidates(){
   const musicalUrl='https://www.broadway.com/shows/tickets/?category=musical&view_all=true';
   const broadwayUrl='https://www.broadway.com/shows/tickets/?category=broadway&view_all=true';
   const playUrl='https://www.broadway.com/shows/tickets/?category=play&view_all=true';
@@ -147,8 +155,28 @@ async function scrape(start,end){
   const musicalLinks=extractShowLinks(musicalHtml,musicalUrl);
   const musicalHrefs=new Set(musicalLinks.map(m=>m.href));
   const playLinks=playHtml?extractShowLinks(playHtml,playUrl).filter(p=>!musicalHrefs.has(p.href)&&(guideEntryFor('new-york',p.name)||{}).kind&&guideEntryFor('new-york',p.name).kind!=='musical'):[];
-  const candidates=intersection([...musicalLinks,...playLinks],extractShowLinks(broadwayHtml,broadwayUrl));
-  if(!candidates.length) throw new Error('No Broadway musical candidates discovered');
+  return intersection([...musicalLinks,...playLinks],extractShowLinks(broadwayHtml,broadwayUrl));
+}
+
+async function candidatesWithRetry(){
+  let lastErr=null;
+  for(let attempt=0;attempt<2;attempt++){
+    if(attempt) await new Promise(r=>setTimeout(r,1500));
+    try{
+      const list=await discoverCandidates();
+      if(list.length){lastCandidates={at:Date.now(),list};return list}
+      lastErr=new Error('No Broadway musical candidates discovered');
+    }catch(err){lastErr=err}
+  }
+  if(lastCandidates&&Date.now()-lastCandidates.at<LAST_GOOD_MS){
+    console.warn('Broadway show list unavailable, using the last good list:',String(lastErr?.message||lastErr));
+    return lastCandidates.list;
+  }
+  throw lastErr||new Error('No Broadway musical candidates discovered');
+}
+
+async function scrape(start,end){
+  const candidates=await candidatesWithRetry();
 
   const dates=[];
   for(let d=new Date(start);d<=end;d=new Date(d.getTime()+86400000)) dates.push(iso(d));
