@@ -478,6 +478,9 @@
     await loadSchedule();
   }
 
+  // Used by booking-checklist.js to reopen a saved trip (dates are not part of musicalPlannerLive).
+  window.mhApplyPlan = applyPlan;
+
   startPlanning = async function () {
     $('dateError').textContent = '';
     const plan = validatePlan();

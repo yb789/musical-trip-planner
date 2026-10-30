@@ -1,0 +1,18 @@
+/* Next day button in the Finish planning bar (patch-next-day.mjs) */
+.finish-bar .finish-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.next-day{position:relative;display:flex;align-items:stretch}
+.next-day:empty{display:none}
+.next-day-btn{min-height:46px;padding:0 14px;font-weight:800;font-size:14px;border:2px solid var(--accent);color:var(--accent);background:#fff;border-radius:10px 0 0 10px;white-space:nowrap}
+.next-day-btn .next-day-date{font-weight:600;opacity:.8}
+.next-day-toggle{min-height:46px;width:38px;padding:0;border:2px solid var(--accent);border-left-width:1px;color:var(--accent);background:#fff;border-radius:0 10px 10px 0;font-size:14px}
+.next-day-btn:hover,.next-day-toggle:hover{background:color-mix(in srgb,var(--accent) 10%,#fff)}
+.next-day-menu{display:none;position:absolute;right:0;bottom:calc(100% + 8px);min-width:220px;max-height:300px;overflow:auto;padding:6px;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.18);z-index:20}
+.next-day.open .next-day-menu{display:block}
+@media(hover:hover){.next-day:hover .next-day-menu{display:block}.next-day:hover .next-day-menu::after{content:"";position:absolute;left:0;right:0;bottom:-10px;height:10px}}
+.next-day-menu-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:6px 8px 4px}
+.next-day-menu button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:9px 10px;border-radius:8px;font-size:14px;min-height:40px}
+.next-day-menu button:hover,.next-day-menu button:focus{background:color-mix(in srgb,var(--accent) 10%,#fff)}
+.next-day-menu button.current{color:var(--muted)}
+.next-day-menu button span{font-size:12px}
+.all-days-done{color:var(--green)}
+@media(max-width:560px){.finish-bar .finish-actions{width:100%}.next-day{flex:1 1 auto}.next-day-btn{flex:1 1 auto}.finish-bar #finishBtn{flex:1 1 auto}.next-day-menu{left:0;right:auto}}
