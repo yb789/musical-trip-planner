@@ -45,6 +45,14 @@ mustReplace(
   'deselect guard'
 );
 
+// 3b. (2026-10-30, Yuval) The chosen card's red button shows only "✕" instead of "Deselect ✕".
+//     Cards with several start times keep the time on the chosen button ("19:00 ✕").
+mustReplace(
+  "\">${o?'Deselect ✕':(multi?esc(t):'Choose')}</button>",
+  "\"${o?' aria-label=\"Deselect this performance\"':''}>${o?(multi?esc(t)+' ✕':'✕'):(multi?esc(t):'Choose')}</button>",
+  'deselect label'
+);
+
 // 4. Styles and script.
 const css = fs.readFileSync('booking-checklist.css', 'utf8');
 const js = fs.readFileSync('booking-checklist.js', 'utf8');
