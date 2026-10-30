@@ -338,6 +338,9 @@
     $('ticketConfirmationOverlay').classList.remove('hidden');
   }
 
+  // Used by the "Book your tickets" checklist (patch-booking-checklist.mjs).
+  window.mhOpenTicketModal=openTicketModal;
+
   function closeTicketModal(){
     $('ticketConfirmationOverlay').classList.add('hidden');
     ticketTarget=null;

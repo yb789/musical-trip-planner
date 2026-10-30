@@ -1,0 +1,51 @@
+/* Book your tickets (patch-booking-checklist.mjs) */
+/* Chosen card: small link instead of the big seller buttons. */
+.card-links .buy-link{display:inline-flex;align-items:center;gap:4px;min-height:34px;margin:0;padding:6px 12px;border:1px solid var(--accent);border-radius:999px;background:transparent;color:var(--accent);font-size:13px;font-weight:800;cursor:pointer}
+.card-links .buy-link:hover{background:var(--accent);color:#fff}
+.card-links .buy-hint{font-size:12px;color:var(--muted);align-self:center}
+.card-links .card-booked{display:inline-flex;align-items:center;font-size:12px;font-weight:800;color:var(--green)}
+.card-links{align-items:center}
+/* The "Bought the ticket?" prompt moves to the checklist; a saved confirmation still shows on the card. */
+.show-card .ticket-confirmation-box:has(.ticket-confirmation-add){display:none}
+
+/* Finish planning panel: wider when the checklist is shown. */
+#finishOverlay .modal:has(#exportPanel:not(.hidden)){width:min(780px,100%)}
+#exportPanel h3{font-family:Georgia,serif;font-size:20px;margin:18px 0 6px}
+#exportPanel .book-intro{margin:0 0 10px;color:var(--muted);font-size:14px}
+.book-progress{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:14px;margin-bottom:10px}
+.book-bar{flex:1 1 160px;height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.book-bar span{display:block;height:100%;background:var(--green);transition:width .3s}
+.book-rows{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.book-row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#fff}
+.book-row.booked{background:#eef6f1;border-color:#b7d6c4}
+.book-row.just-back{box-shadow:0 0 0 3px #f0b429}
+.book-info{flex:1 1 240px;min-width:0}
+.book-when{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.book-show{font-weight:800;font-size:16px;margin:2px 0}
+.book-price{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+.book-venue{font-size:13px;color:var(--muted)}
+.book-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end}
+.book-actions .book-seller{margin:0;border:0;cursor:pointer;min-height:40px;padding:0 14px;font-size:13px;border-radius:10px}
+.book-actions .book-seller.venue-link{background:#5b5248}
+.book-actions .book-mark{min-height:40px;font-weight:800;border:2px solid var(--green);color:var(--green);background:#fff;border-radius:10px;padding:0 14px}
+.book-actions .book-mark:hover{background:var(--green);color:#fff}
+.book-actions .book-confirm,.book-actions .book-undo{min-height:34px;font-size:12px;padding:0 10px;border-radius:8px}
+.book-badge{font-weight:800;color:var(--green);font-size:14px}
+
+/* Leaving the planner */
+#leaveOverlay{z-index:10001}
+.leave-modal{max-width:460px}
+.leave-modal h2{font-size:26px}
+.leave-show{margin:6px 0 14px;line-height:1.45}
+.leave-sellers{display:grid;gap:8px}
+.leave-sellers .ticket-link{display:flex;align-items:center;justify-content:center;min-height:52px;margin:0;font-size:15px;border-radius:12px}
+.leave-sellers .ticket-link.venue-link{background:#5b5248}
+.leave-note{margin-top:12px}
+
+/* Welcome-back toast */
+.book-toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:10002;width:min(560px,calc(100% - 24px));display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:14px 16px;border-radius:14px;background:#1f2a24;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.35);font-size:14px}
+.book-toast.hidden{display:none}
+.book-toast span{flex:1 1 220px}
+.book-toast button{min-height:38px;border-radius:10px;padding:0 12px;font-weight:800}
+.book-toast .book-toast-no,.book-toast .book-toast-close{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5)}
+@media(max-width:560px){.book-actions{justify-content:flex-start;width:100%}.book-actions .book-seller,.book-actions .book-mark{flex:1 1 auto}}
