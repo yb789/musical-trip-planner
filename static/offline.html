@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#17130f">
+<title>You're offline | Musical Trip Planner</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+:root{--bg:#f5f1e8;--paper:#fffdf8;--ink:#181818;--muted:#6b665f;--line:#ddd6ca;--accent:#7c2d12;--green:#1f4b3f}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg);line-height:1.45}
+header{background:linear-gradient(135deg,#17130f,#35251c);color:#fffdf8;padding:22px 18px calc(18px);padding-top:calc(22px + env(safe-area-inset-top))}
+header h1{margin:0;font-family:Georgia,serif;font-size:26px}
+header p{margin:6px 0 0;color:#eadfd5;font-size:15px}
+main{max-width:720px;margin:0 auto;padding:18px 16px calc(28px + env(safe-area-inset-bottom))}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:12px}
+.day h2{margin:0 0 8px;font-size:17px}
+.row{display:flex;gap:12px;padding:8px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.time{flex:0 0 64px;font-weight:700;font-size:15px}
+.sess{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.show{font-weight:700}
+.meta{color:var(--muted);font-size:14px}
+.ref{display:inline-block;margin-top:4px;background:#e3efe8;color:var(--green);border-radius:8px;padding:2px 8px;font-size:14px;font-weight:600}
+.empty{color:var(--muted)}
+button{font:inherit;font-weight:700;border:0;border-radius:12px;background:var(--green);color:#fff;padding:13px 18px;min-height:48px;cursor:pointer;width:100%}
+.small{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>You're offline.</h1>
+  <p>Your saved plan is still here.</p>
+</header>
+<main>
+  <div id="plan"></div>
+  <button type="button" id="retry">Try again</button>
+  <p class="small">Live show times, prices and ticket links need a connection. This page reopens the planner automatically when you're back online. Your plan is saved on this device only.</p>
+</main>
+<script>
+(function(){
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function read(key){try{return JSON.parse(localStorage.getItem(key)||'null');}catch(e){return null;}}
+  var live=read('musicalPlannerLive')||{}, trip=read('musicalPlannerTrip')||{};
+  var cityNames={london:'London (West End)',broadway:'New York (Broadway)'};
+  var choices=live.choices||{};
+  var cities=['london','broadway'];
+  if(trip.city&&cities.indexOf(trip.city)>0)cities.reverse();
+  var today=new Date();today.setHours(0,0,0,0);
+  function dayLabel(iso){var p=iso.split('-').map(Number);var d=new Date(p[0],p[1]-1,p[2]);return isNaN(d)?iso:d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
+  function isPast(iso){var p=iso.split('-').map(Number);return new Date(p[0],p[1]-1,p[2])<today;}
+  var html='',total=0;
+  cities.forEach(function(city){
+    var days=Object.keys(choices[city]||{}).filter(function(d){return /^\d{4}-\d{2}-\d{2}$/.test(d);}).sort();
+    var upcoming=days.filter(function(d){return !isPast(d);});
+    if(upcoming.length)days=upcoming; // past days only if nothing is coming up
+    var block='';
+    days.forEach(function(d){
+      var rows='';
+      ['matinee','evening'].forEach(function(sess){
+        var c=choices[city][d]&&choices[city][d][sess];
+        if(!c||!c.name)return;
+        total++;
+        var ref=c.bookingReference?'<span class="ref">🎟 '+esc(c.bookingReference)+(c.seat?' · Seat: '+esc(c.seat):'')+'</span>':(c.booked?'<span class="ref">✓ Booked</span>':'');
+        rows+='<div class="row"><div class="time">'+esc(c.time||'')+'<span class="sess">'+(sess==='matinee'?'Matinee':'Evening')+'</span></div><div><div class="show">'+esc(c.name)+'</div>'+(c.venue?'<div class="meta">'+esc(c.venue)+'</div>':'')+ref+'</div></div>';
+      });
+      if(rows)block+='<div class="card day"><h2>'+esc(dayLabel(d))+'</h2>'+rows+'</div>';
+    });
+    if(block)html+='<h2 style="font-size:15px;color:var(--muted);margin:6px 2px 10px">'+esc(cityNames[city]||city)+'</h2>'+block;
+  });
+  document.getElementById('plan').innerHTML=total?html:'<div class="card empty">No shows are saved on this device yet. When you’re back online, open the planner to choose your shows; they stay available here even without a connection.</div>';
+  function retry(){location.reload();}
+  document.getElementById('retry').addEventListener('click',retry);
+  window.addEventListener('online',function(){setTimeout(retry,800);});
+})();
+</script>
+</body>
+</html>

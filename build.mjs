@@ -29,7 +29,8 @@ const patches = [
   'patch-ics.mjs',
   'patch-concerts.mjs',
   'patch-booking-checklist.mjs',
-  'patch-next-day.mjs'
+  'patch-next-day.mjs',
+  'patch-pwa.mjs'
 ];
 
 for (const patch of patches) {
@@ -39,7 +40,8 @@ for (const patch of patches) {
 
 fs.mkdirSync('public', { recursive: true });
 fs.copyFileSync('index.html', 'public/index.html');
-for (const f of fs.readdirSync('static')) fs.copyFileSync(`static/${f}`, `public/${f}`);
+// static/ is copied recursively (includes .well-known/assetlinks.json for the Android app).
+fs.cpSync('static', 'public', { recursive: true });
 // Replaces the static sitemap with one listing every show page and guide.
 execFileSync(process.execPath, ['build-sitemap.mjs'], { stdio: 'inherit' });
 console.log('\nBuild complete: public/index.html written.');
