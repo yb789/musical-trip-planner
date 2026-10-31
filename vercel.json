@@ -30,6 +30,9 @@
     "api/broadway2.js": {
       "includeFiles": "data/**",
       "maxDuration": 60
+    },
+    "api/stats.js": {
+      "maxDuration": 60
     }
   },
   "headers": [
@@ -208,6 +211,10 @@
     {
       "path": "/api/guide-check",
       "schedule": "0 5 * * 1"
+    },
+    {
+      "path": "/api/stats?report=daily",
+      "schedule": "15 3 * * *"
     }
   ]
 }
