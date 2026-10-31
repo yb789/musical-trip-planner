@@ -39,7 +39,10 @@
   // ---------- state ----------
   // Show kinds the visitor wants in the planner. Musicals are always on; plays, spectaculars and
   // family shows are opt-in on the opening screen and remembered in this browser.
-  const KINDS = [['musical', 'Musicals'], ['play', 'Big plays'], ['spectacular', 'Spectaculars & concerts'], ['family', 'Family shows']];
+  // 'radiocity' (Yuval, 31 Oct 2026) is a New York-only box: every Ticketmaster event at Radio City Music
+  // Hall, plus the Rockettes' Christmas Spectacular (guide field venueBox), which is also a spectacular.
+  const KINDS = [['musical', 'Musicals'], ['play', 'Big plays'], ['spectacular', 'Spectaculars & concerts'], ['family', 'Family shows'], ['radiocity', 'Radio City Music Hall', 'broadway']];
+  const kindsFor = city => KINDS.filter(k => !k[2] || k[2] === city);
   const hs = { city: 'london', step: 0, ans: {}, short: { london: [], broadway: [] }, hearts: new Set(), screen: '', kinds: ['musical'] };
   try {
     const x = JSON.parse(localStorage.getItem(KEY) || '{}');
@@ -74,11 +77,18 @@
     return (g && g.kind) || 'musical';
   }
   window.mhKindOf = kindOfName;
-  // Concerts share the "Spectaculars & concerts" box.
-  const boxOf = k => (k === 'concert' ? 'spectacular' : k);
-  window.mhKindAllowed = name => hs.kinds.includes(boxOf(kindOfName(name)));
-  window.mhConcertsAllowed = () => hs.kinds.includes('spectacular');
-  window.mhExtraKinds = () => hs.kinds.length > 1;
+  // Concerts share the "Spectaculars & concerts" box in London; in New York they all come from Radio
+  // City Music Hall and belong to the "Radio City Music Hall" box.
+  const curCity = () => (typeof state !== 'undefined' && CITIES.includes(state.city)) ? state.city : hs.city;
+  const concertBox = () => (curCity() === 'broadway' ? 'radiocity' : 'spectacular');
+  const boxOf = k => (k === 'concert' ? concertBox() : k);
+  window.mhKindAllowed = name => {
+    if (hs.kinds.includes(boxOf(kindOfName(name)))) return true;
+    const g = window.mhGuideEntry(name);
+    return !!(g && g.venueBox && hs.kinds.includes(g.venueBox));
+  };
+  window.mhConcertsAllowed = () => hs.kinds.includes(concertBox());
+  window.mhExtraKinds = () => hs.kinds.some(k => k !== 'musical' && kindsFor(curCity()).some(([id]) => id === k));
   window.mhGuideEntry = name => {
     const city = (typeof state !== 'undefined' && CITIES.includes(state.city)) ? state.city : hs.city;
     return entryForName(city, name) || entryForName(city === 'london' ? 'broadway' : 'london', name);
@@ -162,9 +172,9 @@
       </div>
       <h2 class="mh-q" id="mhKindsQ">What would you like to see?</h2>
       <div class="mh-kinds" role="group" aria-labelledby="mhKindsQ">
-        ${KINDS.map(([id, label]) => `<label class="mh-kind${id === 'musical' ? ' mh-kind-fixed' : ''}"><input type="checkbox" data-act="kind" data-kind="${id}" ${hs.kinds.includes(id) ? 'checked' : ''} ${id === 'musical' ? 'disabled' : ''}> ${label}</label>`).join('')}
+        ${kindsFor(hs.city).map(([id, label]) => `<label class="mh-kind${id === 'musical' ? ' mh-kind-fixed' : ''}"><input type="checkbox" data-act="kind" data-kind="${id}" ${hs.kinds.includes(id) ? 'checked' : ''} ${id === 'musical' ? 'disabled' : ''}> ${label}</label>`).join('')}
       </div>
-      <p class="small mh-kinds-note">Musicals are always included. Tick the others to see them in the planner too — Harry Potter and the Cursed Child, Stranger Things, ABBA Voyage, concerts at London theatres and halls and at Radio City Music Hall, and more.</p>
+      <p class="small mh-kinds-note">Musicals are always included. Tick the others to see them in the planner too — Harry Potter and the Cursed Child, Stranger Things, ABBA Voyage, ${hs.city === 'broadway' ? 'the Rockettes and every concert and show at Radio City Music Hall' : 'concerts at London theatres and halls'}, and more.</p>
       <h2 class="mh-q">What would you like to do?</h2>
       <div class="mh-paths">
         <button type="button" class="mh-card" data-act="know"><span class="mh-icon">${ICON_CAL}</span><span class="mh-card-title">I know my Musicals take me to the planner</span><span class="mh-card-text">Pick your dates and choose a matinee and an evening show for each day.</span><span class="mh-card-cta">Go to the planner →</span></button>

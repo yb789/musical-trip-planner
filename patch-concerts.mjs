@@ -22,7 +22,7 @@ const js = `<script>/* CONCERTS_ONE_OFF */
     if(!list.length){box.hidden=true;box.innerHTML='';return}
     box.hidden=false;
     box.innerHTML='<h3>Also on this day <span class="also-sub">one-night concerts</span></h3>'
-      +'<p class="also-note">Single performances in central London, listed for information. They are not added to your plan, calendar or exports.</p>'
+      +'<p class="also-note">Single performances '+(state.city==='broadway'?'at Radio City Music Hall':'in central London')+', listed for information. They are not added to your plan, calendar or exports.</p>'
       +'<ul>'+list.map(c=>'<li><span class="also-time">'+esc(c.time)+'</span><span class="also-main"><b>'+esc(c.name)+'</b>'
         +(c.venue?'<span class="also-venue">'+esc(c.venue)+'</span>':'')+'</span>'
         +(c.from?'<span class="also-price">from '+esc(c.from)+'</span>':'')
