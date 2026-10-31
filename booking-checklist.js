@@ -121,8 +121,10 @@
 
   // ---- The checklist in the Finish planning panel ----
   function rows(){
+    // Only the current trip's dates: choices from earlier trips or dates stay in localStorage.
     const out=[];const all=choices()||{};
-    for(const d of Object.keys(all).sort())for(const session of ['matinee','evening']){const c=all[d]?.[session];if(c)out.push({d,session,c})}
+    const inTrip=d=>typeof isTripDate==='function'?isTripDate(d):(d>=state.start&&d<=state.end);
+    for(const d of Object.keys(all).sort())if(inTrip(d))for(const session of ['matinee','evening']){const c=all[d]?.[session];if(c)out.push({d,session,c})}
     return out;
   }
   function renderBookList(){
