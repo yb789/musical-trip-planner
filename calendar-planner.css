@@ -1,0 +1,77 @@
+/* Calendar-first planning (2026-10-31). See calendar-planner.js. */
+.plancal-view{display:none}
+.plancal-view.active{display:block}
+.layout{grid-template-columns:1fr}
+.pc-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.pc-head b{font-size:17px}
+#pcDatesBtn{font-weight:700;min-height:44px}
+/* Show filter at the top of the planner, collapsible at every width. */
+.planner .sidebar{margin:0 0 14px;box-shadow:none;border-radius:14px}
+.planner .sidebar-head{display:flex;flex-direction:column;padding:12px}
+.planner .sidebar-toggle{display:flex;order:-1;width:100%;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;padding:12px 14px;font-weight:800;font-size:15px;text-align:left}
+.planner .sidebar-toggle .chev{transition:transform .15s;font-size:13px;color:var(--muted)}
+.planner .sidebar.collapsed .sidebar-toggle{margin-bottom:0}
+.planner .sidebar.collapsed .sidebar-toggle .chev{transform:rotate(-90deg)}
+.planner .sidebar.collapsed .sidebar-head{border-bottom:0}
+.planner .sidebar.collapsed .sidebar-head>*:not(.sidebar-toggle),.planner .sidebar.collapsed .musical-list{display:none}
+.planner .musical-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:0 12px;max-height:340px;overflow:auto;padding:4px 12px 12px}
+.planner #sidebarTitle{font-size:18px;margin:2px 0 4px}
+/* Calendar */
+.pc-weekdays,.pc-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.pc-weekdays{margin:4px 0 6px}
+.pc-weekdays div{font-size:12px;font-weight:800;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:.04em}
+.pc-day{border:1px solid var(--line);border-radius:12px;background:#fff;padding:6px;min-height:150px;display:flex;flex-direction:column;gap:5px}
+.pc-day.out{background:transparent;border-style:dashed;opacity:.45;min-height:0}
+.pc-day.has-show{border-color:color-mix(in srgb,var(--green,#1f5f45) 45%,var(--line))}
+.pc-date{font-size:12px;color:var(--muted)}
+.pc-wd{display:none}
+.pc-date b{font-size:17px;color:var(--ink,#1d1712)}
+.pc-mon{font-weight:800;text-transform:uppercase;font-size:11px}
+.pc-slots{display:flex;flex-direction:column;gap:5px;flex:1}
+.pc-slot{font-style:normal;font-family:inherit;display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;text-align:left;border-radius:9px;padding:6px 7px;min-height:52px;font-size:12px;line-height:1.25;border:1px solid var(--line);background:#fbf8f3;color:inherit;cursor:pointer}
+.pc-slot-lbl{font-size:11px;font-weight:800;color:var(--muted)}
+.pc-slot.empty{border-style:dashed}
+.pc-slot.empty:hover,.pc-slot.empty:focus-visible{background:color-mix(in srgb,var(--accent) 8%,#fff);border-color:var(--accent)}
+.pc-slot-add{color:var(--accent);font-weight:700}
+.pc-slot.none{cursor:default;opacity:.55;min-height:0}
+.pc-slot.none .pc-slot-add{color:var(--muted);font-weight:400}
+.pc-slot.filled{background:#e3efe8;border-color:var(--green,#1f5f45);box-shadow:inset 4px 0 0 var(--green,#1f5f45)}
+.pc-slot.filled[data-kind="play"]{background:color-mix(in srgb,var(--kind-play) 12%,#fff);border-color:var(--kind-play);box-shadow:inset 4px 0 0 var(--kind-play)}
+.pc-slot.filled[data-kind="spectacular"]{background:color-mix(in srgb,var(--kind-spectacular) 12%,#fff);border-color:var(--kind-spectacular);box-shadow:inset 4px 0 0 var(--kind-spectacular)}
+.pc-slot.filled[data-kind="family"]{background:color-mix(in srgb,var(--kind-family) 12%,#fff);border-color:var(--kind-family);box-shadow:inset 4px 0 0 var(--kind-family)}
+.pc-slot.filled[data-kind="concert"]{background:color-mix(in srgb,var(--kind-concert) 12%,#fff);border-color:var(--kind-concert);box-shadow:inset 4px 0 0 var(--kind-concert)}
+.pc-slot-show{font-size:13px;overflow-wrap:anywhere}
+.pc-slot-time{color:var(--muted)}
+.pc-booked{color:var(--green,#1f5f45);font-weight:800}
+.pc-slot.pc-flash{animation:pcFlash 1.2s ease}
+@keyframes pcFlash{0%{box-shadow:0 0 0 0 rgba(31,95,69,.55)}100%{box-shadow:0 0 0 12px rgba(31,95,69,0)}}
+.pc-empty-day{font-size:12px;color:var(--muted);padding:6px 2px}
+body.pc-mode .next-day{display:none}
+/* Pop-up */
+.pc-modal{width:min(760px,100%);padding:18px 20px}
+.pc-modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;position:sticky;top:-18px;background:var(--paper);padding:4px 0 8px;z-index:2}
+.pc-modal-head h2{margin:2px 0 0}
+#pcClose{min-width:44px;min-height:44px;font-size:18px}
+#pcList{margin-top:8px}
+.pc-hidden-choice{background:#fff6e5;border:1px solid #e0b866;border-radius:10px;padding:10px;margin-bottom:10px;font-size:14px}
+/* Shows already in the plan elsewhere */
+.show-card.pc-in-plan{background:#fff4d6;box-shadow:inset 5px 0 0 #c98a00}
+.pc-inplan{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:#7a5200;background:#ffe6a8;border-radius:999px;padding:2px 9px}
+.pc-extra-choice{margin-bottom:5px}
+@media (prefers-reduced-motion:reduce){.pc-slot.pc-flash{animation:none}}
+/* Phones and narrow screens: one row per day */
+@media (max-width:760px){
+  .pc-weekdays{display:none}
+  .pc-grid{grid-template-columns:1fr;gap:8px}
+  .pc-day.out{display:none}
+  .pc-day{min-height:0;flex-direction:row;align-items:stretch;gap:8px}
+  .pc-date{width:52px;flex:0 0 52px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .pc-date b{font-size:22px}
+  .pc-wd{display:inline}
+  .pc-slots{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .pc-slot{min-height:58px;font-size:13px}
+  .pc-slot.none{min-height:58px}
+  .pc-empty-day{grid-column:1/-1}
+  .pc-modal{padding:14px}
+  .planner .musical-list{grid-template-columns:1fr;max-height:50vh}
+}

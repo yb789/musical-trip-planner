@@ -59,12 +59,12 @@ button{font:inherit;font-weight:700;border:0;border-radius:12px;background:var(-
     var block='';
     days.forEach(function(d){
       var rows='';
-      ['matinee','evening'].forEach(function(sess){
+      ['morning','matinee','evening','late'].forEach(function(sess){
         var c=choices[city][d]&&choices[city][d][sess];
         if(!c||!c.name)return;
         total++;
         var ref=c.bookingReference?'<span class="ref">🎟 '+esc(c.bookingReference)+(c.seat?' · Seat: '+esc(c.seat):'')+'</span>':(c.booked?'<span class="ref">✓ Booked</span>':'');
-        rows+='<div class="row"><div class="time">'+esc(c.time||'')+'<span class="sess">'+(sess==='matinee'?'Matinee':'Evening')+'</span></div><div><div class="show">'+esc(c.name)+'</div>'+(c.venue?'<div class="meta">'+esc(c.venue)+'</div>':'')+ref+'</div></div>';
+        rows+='<div class="row"><div class="time">'+esc(c.time||'')+'<span class="sess">'+({morning:'Morning',matinee:'Matinee',evening:'Evening',late:'Late'}[sess])+'</span></div><div><div class="show">'+esc(c.name)+'</div>'+(c.venue?'<div class="meta">'+esc(c.venue)+'</div>':'')+ref+'</div></div>';
       });
       if(rows)block+='<div class="card day"><h2>'+esc(dayLabel(d))+'</h2>'+rows+'</div>';
     });

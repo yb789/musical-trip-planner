@@ -3,6 +3,8 @@ import { guideEntryFor } from "../lib/site-pages.js";
 
 const KIND_LABEL = { play: "Play", spectacular: "Spectacular", concert: "Concert", family: "Family show" };
 const CITY_SLUG = { london: "london", broadway: "new-york" };
+const SESSION_LABEL = { morning: "Morning", matinee: "Matinee", evening: "Evening", late: "Late evening" };
+const SESSION_ICON = { morning: "🌅", matinee: "☀️", evening: "🌙", late: "🌌" };
 
 // Read-only page for a shared itinerary. Reached through the vercel.json rewrite  /plan/:code -> /api/plan-page?code=:code
 // Server-rendered so WhatsApp / iMessage / Facebook see per-plan Open Graph tags and a per-plan image (/api/og?plan=CODE).
@@ -67,7 +69,7 @@ export function renderPlan(code, plan) {
   const description = `${shows} chosen performance${shows === 1 ? "" : "s"} over ${days} day${days === 1 ? "" : "s"} in ${cityLabel(plan.city)}. Open it in Musical Trip Planner to edit or make your own.`;
   const dates = Object.keys(plan.choices).sort();
   const dayHtml = dates.map(d => {
-    const perfs = ["matinee", "evening"].map(sess => {
+    const perfs = ["morning", "matinee", "evening", "late"].map(sess => {
       const c = plan.choices[d][sess];
       if (!c) return "";
       const links = [
@@ -77,11 +79,11 @@ export function renderPlan(code, plan) {
       const g = guideEntryFor(CITY_SLUG[plan.city] || "london", c.name);
       const kind = (g && g.kind) || c.kind || "musical";
       const pill = KIND_LABEL[kind] ? ` <span class="kind-pill" data-kind="${kind}">${KIND_LABEL[kind]}</span>` : "";
-      const part = g && g.parts === 2 ? (sess === "matinee" ? "Part One" : (new Date(d + "T12:00:00Z").getUTCDay() === 4 ? "Part One" : "Part Two")) : "";
+      const part = g && g.parts === 2 ? (sess === "morning" || sess === "matinee" ? "Part One" : (new Date(d + "T12:00:00Z").getUTCDay() === 4 ? "Part One" : "Part Two")) : "";
       const partsNote = g && g.parts === 2 ? `<div class="parts-note">${esc(g.partsNote || "Two-part play: Part One and Part Two are separate tickets; you need both to see the whole story.")}</div>` : "";
-      return `<div class="perf" data-kind="${kind}"><div class="icon">${sess === "matinee" ? "☀️" : "🌙"}</div><div>
+      return `<div class="perf" data-kind="${kind}"><div class="icon">${SESSION_ICON[sess]}</div><div>
 <b>${esc(c.name)}</b>${pill}${part ? ` <span class="part">${part}</span>` : ""}${partsNote}
-<div class="meta">${esc(sess === "matinee" ? "Matinee" : "Evening")}${c.time ? " · " + esc(c.time) : ""}${c.venue ? "<br>🎭 " + esc(c.venue) : ""}${c.address ? "<br>📍 " + esc(c.address) : ""}</div>
+<div class="meta">${esc(SESSION_LABEL[sess])}${c.time ? " · " + esc(c.time) : ""}${c.venue ? "<br>🎭 " + esc(c.venue) : ""}${c.address ? "<br>📍 " + esc(c.address) : ""}</div>
 ${links ? `<div class="links">${links}</div>` : ""}</div></div>`;
     }).join("");
     return `<section class="day"><h2>${esc(fmtDay(d, { year: true }))}</h2>${perfs}</section>`;
