@@ -11,7 +11,7 @@
 //   on cdnjs/jsdelivr are served stale-while-revalidate, so exports keep working on a bad connection.
 //
 // Bump VERSION when this file's caching rules change; old caches are deleted on activate.
-const VERSION = 'v1';
+const VERSION = 'v2'; // v2 (31 Oct 2026): offline.html knows Morning / Late choices
 const SHELL_CACHE = `mtp-shell-${VERSION}`;
 const ASSET_CACHE = `mtp-assets-${VERSION}`;
 const OFFLINE_URL = '/offline.html';
