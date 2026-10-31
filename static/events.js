@@ -8,7 +8,7 @@
   document.addEventListener('click',function(e){
     var t=e.target&&e.target.closest?e.target.closest('button,a'):null;if(!t)return;
     if(t.id&&buttons[t.id])send(buttons[t.id]);
-    if(t.tagName==='A'&&t.href){var h='';try{h=new URL(t.href).hostname}catch(x){}
+    if(t.tagName==='A'&&t.href){var h='';try{var lu=new URL(t.href);h=lu.hostname;if(lu.pathname==='/go'&&lu.searchParams.get('u'))h=new URL(lu.searchParams.get('u')).hostname}catch(x){}
       var seller=/sjv\.io$|seatplan\.com$/.test(h)?'seatplan':/evyy\.net$|ticketmaster\./.test(h)?'ticketmaster':'';
       if(seller){var card=t.closest('.show-card,article,.cta,[data-show]');var el=card&&(card.querySelector('[data-show]')||card.querySelector('.show-title,h1,h2,h3'));var show=(el&&(el.dataset.show||el.textContent))||(document.querySelector('main h1,h1')||{}).textContent||'';send('ticket_click',{seller:seller,show:String(show).trim().slice(0,80)})}}
   },true);

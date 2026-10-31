@@ -46,7 +46,7 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (isApi(url)) return; // never intercept or cache the API
+  if (isApi(url) || (url.origin === self.location.origin && url.pathname === '/go')) return; // never intercept the API or the /go ticket redirect
 
   if (req.mode === 'navigate') {
     event.respondWith(handleNavigation(event));
