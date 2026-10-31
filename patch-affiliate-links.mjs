@@ -20,7 +20,12 @@ function mustReplace(search, replacement, label) {
 
 const helpers = `/* AFFILIATE_LINKS_PATCH */
 const SP_AFFILIATE='https://seatplan.sjv.io/c/7761524/2219054/28679';
-function spTracked(url,name,src='planner'){if(!/^https?:\\/\\/([a-z0-9-]+\\.)*seatplan\\.com\\//i.test(url||''))return url;const sub=src+'-'+String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60);return SP_AFFILIATE+'?u='+encodeURIComponent(url)+(sub!==src+'-'?'&subId1='+encodeURIComponent(sub):'')}
+// 2026-10-31: ticket links go through our own /go redirect (lib/go.js adds the Impact tracking
+// link). robots.txt keeps crawlers out of /go. Saved files (src 'export') get the absolute URL.
+const GO_SITE='https://musicaltripplanner.com';
+const isGoLink=u=>/^(https:\\/\\/musicaltripplanner\\.com)?\\/go\\?u=/.test(u||'');
+const goAbs=u=>/^\\/go\\?/.test(u||'')?GO_SITE+u:(u||'');
+function spTracked(url,name,src='planner'){if(!/^https:\\/\\/([a-z0-9-]+\\.)*seatplan\\.com\\//i.test(url||''))return url;const sub=src+'-'+String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60);const go='/go?u='+encodeURIComponent(url)+(sub!==src+'-'?'&subId1='+encodeURIComponent(sub):'');return src==='export'?GO_SITE+go:go}
 const tmLinks=new Map(),tmPending=new Set();
 function tmKey(c,d){return [state.city,c.name,d,c.time].join('|')}
 function tmLinkHtml(c,d){
@@ -28,7 +33,7 @@ function tmLinkHtml(c,d){
   if(tmLinks.has(k)){const u=tmLinks.get(k);return u?\`<a class="ticket-link tm-link" target="_blank" rel="noopener sponsored" href="\${esc(u)}">Tickets on Ticketmaster ↗</a>\`:''}
   if(!tmPending.has(k)){tmPending.add(k);const city=state.city;
     fetch('/api/tm-link?'+new URLSearchParams({city,name:c.name,date:d,time:c.time||''})).then(r=>r.ok?r.json():{url:''}).catch(()=>({url:''})).then(j=>{
-      const u=String((j&&j.url)||'');tmLinks.set(k,/^https:\\/\\/ticketmaster\\.evyy\\.net\\//.test(u)?u:'');tmPending.delete(k);
+      const u=String((j&&j.url)||'');tmLinks.set(k,isGoLink(u)?u:'');tmPending.delete(k);
       if(u&&state.city===city&&state.active===d){try{renderDay()}catch(e){}}
     });}
   return'';
@@ -80,8 +85,8 @@ function tmLinksForExport(){
   const jobs=[];
   for(const [d,day] of Object.entries(choices())){
     for(const sess of ['matinee','evening']){const c=day?.[sess];if(!c)continue;const k=tmExportKey(c,fmt(d));if(tmExport.has(k))continue;
-      const cached=tmLinks.get(tmKey(c,d));if(cached!==undefined){tmExport.set(k,cached.replace(/([?&]subId1=)planner-/,'$1export-'));continue}
-      jobs.push(fetch('/api/tm-link?'+new URLSearchParams({city:state.city,name:c.name,date:d,time:c.time||''})).then(r=>r.ok?r.json():{url:''}).catch(()=>({url:''})).then(j=>{const u=String((j&&j.url)||'');const ok=/^https:\\/\\/ticketmaster\\.evyy\\.net\\//.test(u)?u:'';tmExport.set(k,ok.replace(/([?&]subId1=)planner-/,'$1export-'));tmLinks.set(tmKey(c,d),ok)}));
+      const cached=tmLinks.get(tmKey(c,d));if(cached!==undefined){tmExport.set(k,goAbs(cached.replace(/([?&]subId1=)planner-/,'$1export-')));continue}
+      jobs.push(fetch('/api/tm-link?'+new URLSearchParams({city:state.city,name:c.name,date:d,time:c.time||''})).then(r=>r.ok?r.json():{url:''}).catch(()=>({url:''})).then(j=>{const u=String((j&&j.url)||'');const ok=isGoLink(u)?u:'';tmExport.set(k,goAbs(ok.replace(/([?&]subId1=)planner-/,'$1export-')));tmLinks.set(tmKey(c,d),ok)}));
     }
   }
   return Promise.all(jobs);

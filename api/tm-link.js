@@ -2,7 +2,7 @@
 // Returns { url } — the Ticketmaster page for that exact performance, wrapped in the Impact affiliate
 // link — or { url: "" } when Ticketmaster doesn't sell it (the planner then shows no Ticketmaster button).
 // Uses the licensed Discovery API through lib/site-pages.js (same lookup as the show pages).
-import { entryForName, showPerformances, affiliateUrl } from "../lib/site-pages.js";
+import { entryForName, showPerformances, goPath } from "../lib/site-pages.js";
 
 const CITY = { london: "london", broadway: "new-york" };
 const mins = t => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ""); return m ? Number(m[1]) * 60 + Number(m[2]) : -1; };
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
   const p = pickPerformance(r.performances, date, time);
   let url = "";
   if (p) {
-    const tracked = affiliateUrl(p.url, `planner-${show.id}`);
+    const tracked = goPath(p.url, `planner-${show.id}`); // /go?u=…&subId1=planner-<id> (lib/go.js adds Impact)
     if (tracked !== p.url) url = tracked; // only Ticketmaster pages get a button
   }
   return send(200, { url }, "public, s-maxage=3600, stale-while-revalidate=86400");

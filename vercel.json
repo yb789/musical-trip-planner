@@ -108,6 +108,10 @@
       "destination": "/api/og?icon=512&maskable=1"
     },
     {
+      "source": "/go",
+      "destination": "/api/pages?type=go"
+    },
+    {
       "source": "/privacy",
       "destination": "/api/pages?type=privacy"
     },
