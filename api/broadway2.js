@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 import { applySeatPlanLinks } from "../lib/seatplan.js";
-import { guideEntryFor } from "../lib/site-pages.js";
+import { guideEntryFor, guide, kindOf, isPastBooking, showPerformances } from "../lib/site-pages.js";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const cache = new Map();
@@ -175,6 +175,31 @@ async function candidatesWithRetry(){
   throw lastErr||new Error('No Broadway musical candidates discovered');
 }
 
+// Guide shows that broadway.com doesn't list — the Rockettes' Christmas Spectacular at Radio City Music
+// Hall (31 Oct 2026) — take their times from the licensed Ticketmaster Discovery API. Opt-in per guide
+// entry with `tmSchedule: true`. Never fails the Broadway schedule.
+async function ticketmasterGuideShows(start,end,haveNames,schedule){
+  const have=new Set(haveNames.map(n=>(guideEntryFor('new-york',n)||{}).id).filter(Boolean));
+  const startS=iso(start), endS=iso(end), out=[];
+  for(const g of guide('new-york').filter(g=>g.tmSchedule&&!have.has(g.id)&&!isPastBooking(g))){
+    // A day either side: Ticketmaster's window is UTC, localDate is what counts.
+    const days=Math.round((end-start)/86400000)+3;
+    const r=await showPerformances('new-york',g,{start:iso(new Date(start.getTime()-86400000)),days}).catch(()=>({ok:false}));
+    if(!r.ok) continue;
+    let any=false, venue='';
+    const seen=new Set();
+    for(const p of r.performances){
+      if(p.date<startS||p.date>endS||!schedule[p.date]||!/^\d{2}:\d{2}$/.test(p.time)||/cancel|postpone/i.test(p.status)) continue;
+      if(seen.has(p.date+'|'+p.time)) continue;
+      seen.add(p.date+'|'+p.time);
+      schedule[p.date].push(p.from?[g.title,p.time,{from:p.from}]:[g.title,p.time]);
+      any=true; venue=venue||p.venue;
+    }
+    if(any) out.push({name:g.title,venue:g.venue||venue,ticketUrl:g.tickets||'',infoUrl:g.tickets||'',kind:kindOf(g)});
+  }
+  return out;
+}
+
 async function scrape(start,end){
   const candidates=await candidatesWithRetry();
 
@@ -212,6 +237,9 @@ async function scrape(start,end){
     }
   }
 
+  const tmShows=await ticketmasterGuideShows(start,end,shows.map(s=>s.name),schedule).catch(err=>{console.error('Ticketmaster guide shows failed:',err?.message||err);return []});
+  shows.push(...tmShows);
+
   for(const d of dates){
     const seen=new Set();
     schedule[d]=schedule[d].map(([name,time,meta])=>meta?[cleanShowTitle(name),time,meta]:[cleanShowTitle(name),time]).filter(([name,time])=>{
@@ -225,7 +253,9 @@ async function scrape(start,end){
   if(!shows.length) throw new Error('Broadway.com full schedule pages returned no performances for the selected range');
   // Ticket links point at SeatPlan; the Broadway.com show page stays available as infoUrl / sourceTicketUrl.
   await applySeatPlanLinks('broadway',shows);
-  return {shows,schedule,sources:['Broadway.com full show schedule pages (times and starting prices)','SeatPlan (ticket links)']};
+  const sources=['Broadway.com full show schedule pages (times and starting prices)','SeatPlan (ticket links)'];
+  if(tmShows.length) sources.push('Ticketmaster ('+tmShows.map(s=>s.name).join(', ')+')');
+  return {shows,schedule,sources};
 }
 
 export default async function handler(req,res){

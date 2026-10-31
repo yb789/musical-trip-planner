@@ -94,6 +94,7 @@ mustReplace(
     "Lena Horne Theatre":"256 W 47th St, New York, NY 10036, USA",
     "Longacre Theatre":"220 W 48th St, New York, NY 10019, USA",
     "Gershwin Theatre":"222 W 51st St, New York, NY 10019, USA",
+    "Radio City Music Hall":"1260 6th Ave, New York, NY 10020, USA",
     "Lyric Theatre":"214 W 43rd St, New York, NY 10036, USA",
     "Music Box Theatre":"239 W 45th St, New York, NY 10036, USA",
     "Winter Garden Theatre":"1634 Broadway, New York, NY 10019, USA",
