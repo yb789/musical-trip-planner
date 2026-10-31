@@ -17,6 +17,80 @@
   const shortDay=d=>fmt(d,{weekday:'short',day:'numeric',month:'short'});
   let open=null; // {date, slot} of the pop-up
 
+  // ---- Tight timing (2026-10-31, Yuval) ----
+  // Two chosen shows on one day are "tight" when the later one starts less than TRAVEL minutes
+  // after the earlier one is expected to end (different theatres), and "overlapping" when it starts
+  // before that. End = start + guide running time (per part for two-part shows; 2h30 if unknown).
+  const TRAVEL=30;
+  const hhmm=m=>`${String(Math.floor(m/60)%24).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+  const vkey=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/theatre|theater/g,'');
+  function runOf(name,time,date){
+    const g=typeof guideFor==='function'?guideFor(name):null,r=g&&g.runtime;
+    const part=typeof partLabel==='function'?partLabel(name,time,date):'';
+    const m=window.mhIcs&&window.mhIcs.runtimeMinutes?window.mhIcs.runtimeMinutes(r,part):150;
+    return {mins:m||150,est:!r};
+  }
+  function venueFor(name,c){
+    if(c&&c.venue)return c.venue;
+    const g=typeof guideFor==='function'?guideFor(name):null;
+    return (g&&g.venue)||((typeof showMeta==='function'&&showMeta(name).venue)||'');
+  }
+  // Clashes between a show at `time` and the other choices of `date` (skipKey = the slot it would replace).
+  function clashes(date,name,time,skipKey){
+    const ch=choices()[date]||{},out=[],me={name,time,venue:venueFor(name),run:runOf(name,time,date)};
+    for(const k of MH_SESSIONS){
+      if(k===skipKey)continue;
+      const c=ch[k];if(!c||(c.name===name&&c.time===time))continue;
+      const other={name:c.name,time:c.time,venue:venueFor(c.name,c),run:runOf(c.name,c.time,date)};
+      const [first,second]=mins(other.time)<=mins(me.time)?[other,me]:[me,other];
+      const end=mins(first.time)+first.run.mins,gap=mins(second.time)-end;
+      const same=!!first.venue&&vkey(first.venue)===vkey(second.venue);
+      if(gap<0||(!same&&gap<TRAVEL))out.push({first,second,end,gap,overlap:gap<0,same});
+    }
+    return out;
+  }
+  function clashText(x,html=true){
+    const b=v=>html?`<b>${esc(cleanShowTitle(v))}</b>`:cleanShowTitle(v),e=v=>html?esc(v):v;
+    const est=x.first.run.est?' (estimated; its running time is not listed)':'';
+    if(x.overlap)return `${b(x.first.name)} (${e(x.first.time)}) ends at about ${hhmm(x.end)}${est}, but ${b(x.second.name)} starts at ${e(x.second.time)}: the times overlap by ${-x.gap} minutes.`;
+    return `${b(x.first.name)} (${e(x.first.time)}) ends at about ${hhmm(x.end)}${est}, and ${b(x.second.name)} starts at ${e(x.second.time)}${x.second.venue?` at ${e(x.second.venue)}`:''}: only ${x.gap} minutes to leave one theatre and reach the other.`;
+  }
+  function ensureTight(){
+    let o=$('tightOverlay');if(o)return o;
+    o=document.createElement('div');o.id='tightOverlay';o.className='overlay hidden';
+    o.setAttribute('role','alertdialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-labelledby','tightTitle');
+    o.innerHTML='<div class="modal"><h2 id="tightTitle">⚠ Tight timing</h2><div id="tightText"></div><p class="small">End times are estimates from published running times. Curtain calls, exit queues and getting across town can take longer, so leave at least '+TRAVEL+' minutes between theatres.</p><div class="actions"><button type="button" id="tightNo">Pick another show</button><button type="button" id="tightYes" class="primary">Choose anyway</button></div></div>';
+    document.body.appendChild(o);
+    return o;
+  }
+  let tightOk=false;
+  function askTight(name,time,list){
+    const o=ensureTight();
+    $('tightTitle').textContent=list.some(x=>x.overlap)?'⚠ These shows overlap':'⚠ Tight timing';
+    $('tightText').innerHTML=list.map(x=>`<p>${clashText(x)}</p>`).join('');
+    o.classList.remove('hidden');
+    $('tightNo').onclick=()=>{o.classList.add('hidden')};
+    $('tightYes').onclick=()=>{o.classList.add('hidden');tightOk=true;commitChoice(name,time)};
+    $('tightNo').focus({preventScroll:true});
+  }
+  // Notes on the cards of a list: which start times would be tight with the day's other choices.
+  function markTight(container,date){
+    if(!container)return;
+    container.querySelectorAll('.show-card').forEach(card=>{
+      card.querySelectorAll('.pc-tight').forEach(n=>n.remove());
+      const t=card.querySelector('.show-title[data-show]');if(!t)return;
+      const notes=[];
+      card.querySelectorAll('.pick:not(.selected)').forEach(b=>{
+        for(const x of clashes(date,b.dataset.name,b.dataset.time,sessionOf(b.dataset.time))){
+          const other=x.first.name===b.dataset.name&&x.first.time===b.dataset.time?x.second:x.first;
+          const n=`${x.overlap?'Overlaps':'Tight with'} ${cleanShowTitle(other.name)} ${other.time}`+(x.overlap?'':` (${x.gap} min)`);
+          if(!notes.includes(n))notes.push(n);
+        }
+      });
+      if(notes.length)(card.querySelector('.show-venue')||t).insertAdjacentHTML('afterend',`<div class="pc-tight">⚠ ${esc(notes.join(' · '))}</div>`);
+    });
+  }
+
   function entriesFor(date){
     const ex=state.excluded[state.city]||new Set();
     return ((current()&&current().schedule[date])||[])
@@ -45,7 +119,9 @@
     const i=SLOT_INFO[s.k],lbl=`<span class="pc-slot-lbl">${i.icon} ${i.label}</span>`;
     if(s.c){
       const booked=s.c.booked||s.c.bookingReference;
-      return `<button type="button" class="pc-slot filled" data-date="${date}" data-slot="${s.k}" data-kind="${esc(s.c.kind||kindOfShow(s.c.name))}" title="Change or remove the ${i.label.toLowerCase()} show">${lbl}<b class="pc-slot-show">${esc(cleanShowTitle(s.c.name))}</b><span class="pc-slot-time">${esc(s.c.time)}${partLabel(s.c.name,s.c.time,date)?' · '+partLabel(s.c.name,s.c.time,date):''}${booked?' · <span class="pc-booked">✓ Booked</span>':''}</span></button>`;
+      const cl=clashes(date,s.c.name,s.c.time,s.k);
+      const warn=cl.length?`<span class="pc-slot-warn" title="${esc(cl.map(x=>clashText(x,false)).join(' '))}">⚠ ${cl.some(x=>x.overlap)?'Overlaps another show':'Tight timing'}</span>`:'';
+      return `<button type="button" class="pc-slot filled${cl.length?' tight':''}" data-date="${date}" data-slot="${s.k}" data-kind="${esc(s.c.kind||kindOfShow(s.c.name))}" title="Change or remove the ${i.label.toLowerCase()} show">${lbl}<b class="pc-slot-show">${esc(cleanShowTitle(s.c.name))}</b><span class="pc-slot-time">${esc(s.c.time)}${partLabel(s.c.name,s.c.time,date)?' · '+partLabel(s.c.name,s.c.time,date):''}${booked?' · <span class="pc-booked">✓ Booked</span>':''}</span>${warn}</button>`;
     }
     if(!s.n)return `<div class="pc-slot none">${lbl}<span class="pc-slot-add">No ${i.label.toLowerCase()} shows</span></div>`;
     return `<button type="button" class="pc-slot empty" data-date="${date}" data-slot="${s.k}" title="See the ${s.n} ${i.label.toLowerCase()} show${s.n===1?'':'s'}">${lbl}<span class="pc-slot-add">+ Choose · ${s.n} show${s.n===1?'':'s'}</span></button>`;
@@ -137,7 +213,8 @@
     const r=prevRenderDay.apply(this,a);
     try{
       markInPlan($('matineeList'),state.active);markInPlan($('eveningList'),state.active);
-      if(open)markInPlan($('pcList'),open.date);
+      if(open){markInPlan($('pcList'),open.date);markTight($('pcList'),open.date)}
+      markTight($('matineeList'),state.active);markTight($('eveningList'),state.active);
       // Day-by-day summary: the extra Morning / Late choices.
       const ch=choices()[state.active]||{},line=(k,c)=>`<div class="pc-extra-choice">${SLOT_INFO[k].label}: <b data-show="${esc(c.name)}">${esc(cleanShowTitle(c.name))}</b>${kindPill(c.name)} · ${esc(c.time)}</div>`;
       if(ch.morning&&$('matineeChoice'))$('matineeChoice').insertAdjacentHTML('afterbegin',line('morning',ch.morning));
@@ -147,8 +224,13 @@
     return r;
   };
   const prevCommit=commitChoice;
-  commitChoice=function(...a){
-    const r=prevCommit.apply(this,a);
+  commitChoice=function(name,time,...rest){
+    if(!tightOk){
+      const list=clashes(state.active,name,time,sessionOf(time));
+      if(list.length){askTight(name,time,list);return}
+    }
+    tightOk=false;
+    const r=prevCommit.call(this,name,time,...rest);
     closeSlot();
     return r;
   };
