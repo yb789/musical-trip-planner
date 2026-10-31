@@ -41,7 +41,7 @@ export default async function handler(req, res) {
   const p = pickPerformance(r.performances, date, time);
   let url = "";
   if (p) {
-    const tracked = goPath(p.url, `planner-${show.id}`); // /go?u=…&subId1=planner-<id> (api/go.js adds Impact)
+    const tracked = goPath(p.url, `planner-${show.id}`); // /go?u=…&subId1=planner-<id> (lib/go.js adds Impact)
     if (tracked !== p.url) url = tracked; // only Ticketmaster pages get a button
   }
   return send(200, { url }, "public, s-maxage=3600, stale-while-revalidate=86400");

@@ -1,5 +1,6 @@
 import { CITIES, renderShow, renderCity, renderMatinees, renderGuide, renderGuidesIndex, renderAbout, renderPrivacy, notFound } from "../lib/site-pages.js";
 import { loadSchedule } from "../lib/schedule-data.js";
+import { handleGo } from "../lib/go.js";
 
 // Indexable pages, reached through vercel.json rewrites:
 //   /london/  /new-york/            -> ?type=city&city=…
@@ -7,9 +8,11 @@ import { loadSchedule } from "../lib/schedule-data.js";
 //   /london/:slug/  /new-york/:slug/ -> ?type=show&city=…&slug=…
 //   /guides/  /guides/:slug/         -> ?type=guide&slug=…
 //   /about/                          -> ?type=about
+//   /go?u=…&subId1=…                 -> ?type=go  (ticket redirect, lib/go.js)
 export default async function handler(req, res) {
   const q = req.query || {};
   const type = String(q.type || "");
+  if (type === "go") return handleGo(req, res);
   const city = String(q.city || "");
   const slug = String(q.slug || "").toLowerCase().replace(/\/+$/, "");
   res.setHeader("Content-Type", "text/html; charset=utf-8");

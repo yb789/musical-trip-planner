@@ -20,7 +20,7 @@ function mustReplace(search, replacement, label) {
 
 const helpers = `/* AFFILIATE_LINKS_PATCH */
 const SP_AFFILIATE='https://seatplan.sjv.io/c/7761524/2219054/28679';
-// 2026-10-31: ticket links go through our own /go redirect (api/go.js adds the Impact tracking
+// 2026-10-31: ticket links go through our own /go redirect (lib/go.js adds the Impact tracking
 // link). robots.txt keeps crawlers out of /go. Saved files (src 'export') get the absolute URL.
 const GO_SITE='https://musicaltripplanner.com';
 const isGoLink=u=>/^(https:\\/\\/musicaltripplanner\\.com)?\\/go\\?u=/.test(u||'');
