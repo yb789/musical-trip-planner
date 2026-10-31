@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { applySeatPlanLinks } from "../lib/seatplan.js";
+import { radioCityEvents } from "../lib/tm-concerts.js";
 import { guideEntryFor, guide, kindOf, isPastBooking, showPerformances } from "../lib/site-pages.js";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
@@ -271,8 +272,10 @@ export default async function handler(req,res){
   if(cached&&Date.now()-cached.at<CACHE_TTL_MS) return json(res,200,cached.data);
 
   try{
-    const result=await scrape(start,end);
-    const data={city:'broadway',start:iso(start),end:iso(end),refreshedAt:new Date().toISOString(),...result};
+    // Radio City Music Hall events from Ticketmaster ride along like London's concerts (only shown when
+    // the visitor ticks "Spectaculars & concerts"); a failure there never fails the search.
+    const [result,rc]=await Promise.all([scrape(start,end),radioCityEvents(iso(start),iso(end)).catch(()=>({shows:[],schedule:{}}))]);
+    const data={city:'broadway',start:iso(start),end:iso(end),refreshedAt:new Date().toISOString(),...result,concerts:{shows:rc.shows||[],schedule:rc.schedule||{}}};
     cache.set(key,{at:Date.now(),data});
     return json(res,200,data);
   }catch(err){
