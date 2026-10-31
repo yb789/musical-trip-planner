@@ -340,6 +340,7 @@
 
   // Used by the "Book your tickets" checklist (patch-booking-checklist.mjs).
   window.mhOpenTicketModal=openTicketModal;
+  window.mhGetPdfJs=getPdfJs;
 
   function closeTicketModal(){
     $('ticketConfirmationOverlay').classList.add('hidden');
