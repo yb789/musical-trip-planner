@@ -1,6 +1,6 @@
-import { normalizeEvent, storeEvent } from "../lib/events.js";
+import { normalizeEvent, storeEvent, countryOf } from "../lib/events.js";
 
-// POST /api/event  body: {event, page, city, seller, show}  (sent with navigator.sendBeacon)
+// POST /api/event  body: {event, page, city, seller, show, ref}  (sent with navigator.sendBeacon)
 // Always answers 204 so a browser never sees an error; bad or over-quota events are dropped.
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   if (!ev) return res.status(204).end();
   try {
     const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket?.remoteAddress || "";
-    await storeEvent(ev, ip);
+    await storeEvent(ev, ip, countryOf(req.headers));
   } catch (err) {
     console.error("event store failed", err);
   }
