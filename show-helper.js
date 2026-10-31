@@ -362,7 +362,7 @@
     for (let i = top.length - 1; i >= 0; i--) list.prepend(top[i]);
   }
   function decorateDay() {
-    document.querySelectorAll('#matineeList .show-card, #eveningList .show-card').forEach(card => {
+    document.querySelectorAll('#matineeList .show-card, #eveningList .show-card, #pcList .show-card').forEach(card => {
       const t = card.querySelector('.show-title[data-show]');
       if (!t || !isShort(t.dataset.show)) return;
       card.classList.add('mh-short-card');

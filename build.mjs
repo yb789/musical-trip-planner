@@ -30,7 +30,8 @@ const patches = [
   'patch-concerts.mjs',
   'patch-booking-checklist.mjs',
   'patch-next-day.mjs',
-  'patch-pwa.mjs'
+  'patch-pwa.mjs',
+  'patch-calendar-planner.mjs'
 ];
 
 for (const patch of patches) {

@@ -10,7 +10,7 @@ const CITY_SLUG = { london: "london", broadway: "new-york" };
 
 function partOf(g, sess, date) {
   if (!g || g.parts !== 2) return "";
-  if (sess === "matinee") return "Part One";
+  if (sess === "morning" || sess === "matinee") return "Part One";
   return new Date(date + "T12:00:00Z").getUTCDay() === 4 ? "Part One" : "Part Two";
 }
 
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   const { plan } = found;
   const events = [];
   for (const date of Object.keys(plan.choices).sort()) {
-    for (const sess of ["matinee", "evening"]) {
+    for (const sess of ["morning", "matinee", "evening", "late"]) {
       const c = plan.choices[date][sess];
       if (!c || !c.time) continue;
       const g = guideEntryFor(CITY_SLUG[plan.city] || "london", c.name);
