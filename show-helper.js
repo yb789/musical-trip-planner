@@ -41,7 +41,10 @@
   // family shows are opt-in on the opening screen and remembered in this browser.
   // 'radiocity' (Yuval, 31 Oct 2026) is a New York-only box: every Ticketmaster event at Radio City Music
   // Hall, plus the Rockettes' Christmas Spectacular (guide field venueBox), which is also a spectacular.
-  const KINDS = [['musical', 'Musicals'], ['play', 'Big plays'], ['spectacular', 'Spectaculars & concerts'], ['family', 'Family shows'], ['radiocity', 'Radio City Music Hall', 'broadway']];
+  // 'offbroadway' (Yuval, 1 Nov 2026) is New York-only too: Off-Broadway musicals (guide field offBroadway)
+  // appear only when it is ticked. An Off-Broadway show of another kind (Masquerade, a spectacular) shows
+  // with either its own kind's box or this one.
+  const KINDS = [['musical', 'Musicals'], ['offbroadway', 'Off-Broadway', 'broadway'], ['play', 'Big plays'], ['spectacular', 'Spectaculars & concerts'], ['family', 'Family shows'], ['radiocity', 'Radio City Music Hall', 'broadway']];
   const kindsFor = city => KINDS.filter(k => !k[2] || k[2] === city);
   const hs = { city: 'london', step: 0, ans: {}, short: { london: [], broadway: [] }, hearts: new Set(), screen: '', kinds: ['musical'] };
   try {
@@ -83,8 +86,13 @@
   const concertBox = () => (curCity() === 'broadway' ? 'radiocity' : 'spectacular');
   const boxOf = k => (k === 'concert' ? concertBox() : k);
   window.mhKindAllowed = name => {
-    if (hs.kinds.includes(boxOf(kindOfName(name)))) return true;
     const g = window.mhGuideEntry(name);
+    const k = kindOfName(name);
+    if (g && g.offBroadway && curCity() === 'broadway') {
+      if (hs.kinds.includes('offbroadway')) return true;
+      if (k === 'musical') return false;
+    }
+    if (hs.kinds.includes(boxOf(k))) return true;
     return !!(g && g.venueBox && hs.kinds.includes(g.venueBox));
   };
   window.mhConcertsAllowed = () => hs.kinds.includes(concertBox());
@@ -174,7 +182,7 @@
       <div class="mh-kinds" role="group" aria-labelledby="mhKindsQ">
         ${kindsFor(hs.city).map(([id, label]) => `<label class="mh-kind${id === 'musical' ? ' mh-kind-fixed' : ''}"><input type="checkbox" data-act="kind" data-kind="${id}" ${hs.kinds.includes(id) ? 'checked' : ''} ${id === 'musical' ? 'disabled' : ''}> ${label}</label>`).join('')}
       </div>
-      <p class="small mh-kinds-note">Musicals are always included. Tick the others to see them in the planner too — Harry Potter and the Cursed Child, Stranger Things, ABBA Voyage, ${hs.city === 'broadway' ? 'the Rockettes and every concert and show at Radio City Music Hall' : 'concerts at London theatres and halls'}, and more.</p>
+      <p class="small mh-kinds-note">Musicals are always included. Tick the others to see them in the planner too — ${hs.city === 'broadway' ? 'Off-Broadway musicals such as Little Shop of Horrors, ' : ''}Harry Potter and the Cursed Child, Stranger Things, ABBA Voyage, ${hs.city === 'broadway' ? 'the Rockettes and every concert and show at Radio City Music Hall' : 'concerts at London theatres and halls'}, and more.</p>
       <h2 class="mh-q">What would you like to do?</h2>
       <div class="mh-paths">
         <button type="button" class="mh-card" data-act="know"><span class="mh-icon">${ICON_CAL}</span><span class="mh-card-title">I know my Musicals take me to the planner</span><span class="mh-card-text">Pick your dates and choose a matinee and an evening show for each day.</span><span class="mh-card-cta">Go to the planner →</span></button>

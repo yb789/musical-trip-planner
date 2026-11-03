@@ -373,7 +373,7 @@
 
       for (const date of days()) if (!schedule[date]) schedule[date] = [];
       state.data[state.city] = { shows: [...showsByName.values()], schedule, oneOffs };
-      const musicalCount = [...showsByName.values()].filter(s => !s.kind || s.kind === 'musical').length, extraCount = [...showsByName.values()].filter(s => s.kind && s.kind !== 'musical' && (typeof window.mhKindAllowed !== 'function' || window.mhKindAllowed(s.name))).length;
+      const musicalCount = [...showsByName.values()].filter(s => (!s.kind || s.kind === 'musical') && (typeof window.mhKindAllowed !== 'function' || window.mhKindAllowed(s.name))).length, extraCount = [...showsByName.values()].filter(s => s.kind && s.kind !== 'musical' && (typeof window.mhKindAllowed !== 'function' || window.mhKindAllowed(s.name))).length;
       setStatus(`Live schedule refreshed: ${musicalCount} musicals${extraCount ? ` and ${extraCount} plays, spectaculars, concerts or family shows` : ''}, ${performanceCount} performance slots found across ${count} selected day${count === 1 ? '' : 's'}. ${[...sources].join(' + ')}`, 'ok');
       renderAll();
     } catch (error) {

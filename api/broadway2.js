@@ -156,7 +156,13 @@ async function discoverCandidates(){
   const musicalLinks=extractShowLinks(musicalHtml,musicalUrl);
   const musicalHrefs=new Set(musicalLinks.map(m=>m.href));
   const playLinks=playHtml?extractShowLinks(playHtml,playUrl).filter(p=>!musicalHrefs.has(p.href)&&(guideEntryFor('new-york',p.name)||{}).kind&&guideEntryFor('new-york',p.name).kind!=='musical'):[];
-  return intersection([...musicalLinks,...playLinks],extractShowLinks(broadwayHtml,broadwayUrl));
+  // Off-Broadway (1 Nov 2026): broadway.com files Off-Broadway shows under "musical" but not "broadway",
+  // so guide entries marked offBroadway are kept from the musicals list too. The planner shows them only
+  // to visitors who tick "Off-Broadway"; ones broadway.com doesn't list fall back to Ticketmaster below.
+  const offLinks=musicalLinks.filter(m=>{const g=guideEntryFor('new-york',m.name);return g&&g.offBroadway&&!isPastBooking(g)});
+  const both=intersection([...musicalLinks,...playLinks],extractShowLinks(broadwayHtml,broadwayUrl));
+  const have=new Set(both.map(m=>m.href));
+  return [...both,...offLinks.filter(m=>!have.has(m.href))];
 }
 
 async function candidatesWithRetry(){
@@ -178,11 +184,12 @@ async function candidatesWithRetry(){
 
 // Guide shows that broadway.com doesn't list — the Rockettes' Christmas Spectacular at Radio City Music
 // Hall (31 Oct 2026) — take their times from the licensed Ticketmaster Discovery API. Opt-in per guide
-// entry with `tmSchedule: true`. Never fails the Broadway schedule.
+// entry with `tmSchedule: true`; Off-Broadway guide shows (`offBroadway: true`) that broadway.com didn't
+// list use it too. Never fails the Broadway schedule.
 async function ticketmasterGuideShows(start,end,haveNames,schedule){
   const have=new Set(haveNames.map(n=>(guideEntryFor('new-york',n)||{}).id).filter(Boolean));
   const startS=iso(start), endS=iso(end), out=[];
-  for(const g of guide('new-york').filter(g=>g.tmSchedule&&!have.has(g.id)&&!isPastBooking(g))){
+  for(const g of guide('new-york').filter(g=>(g.tmSchedule||g.offBroadway)&&!have.has(g.id)&&!isPastBooking(g))){
     // A day either side: Ticketmaster's window is UTC, localDate is what counts.
     const days=Math.round((end-start)/86400000)+3;
     const r=await showPerformances('new-york',g,{start:iso(new Date(start.getTime()-86400000)),days}).catch(()=>({ok:false}));
@@ -230,7 +237,8 @@ async function scrape(start,end){
     if(hasAny){
       shows.push({
         name:cleanName,
-        venue:p.venue||'Broadway, New York',
+        // broadway.com sometimes gives no theatre (Little Shop, Masquerade, Rocky Horror): use the guide's.
+        venue:p.venue||String((guideEntryFor('new-york',cleanName)||{}).venue||'').replace(/\s*·\s*Off-Broadway$/,'')||'Broadway, New York',
         ticketUrl:p.href,
         infoUrl:p.href,
         kind:(guideEntryFor('new-york',cleanName)||{}).kind||'musical'
