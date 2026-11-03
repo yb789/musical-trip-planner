@@ -237,7 +237,8 @@ async function scrape(start,end){
     if(hasAny){
       shows.push({
         name:cleanName,
-        venue:p.venue||'Broadway, New York',
+        // broadway.com sometimes gives no theatre (Little Shop, Masquerade, Rocky Horror): use the guide's.
+        venue:p.venue||String((guideEntryFor('new-york',cleanName)||{}).venue||'').replace(/\s*·\s*Off-Broadway$/,'')||'Broadway, New York',
         ticketUrl:p.href,
         infoUrl:p.href,
         kind:(guideEntryFor('new-york',cleanName)||{}).kind||'musical'
