@@ -18,11 +18,24 @@
       </div>
       <p class="small">Choose the city, then pick your trip dates on the calendar. Use the arrows to move between months.</p>
       <div class="field city-field">
-        <label for="startCity">City</label>
-        <select id="startCity">
+        <span class="city-pick-label" id="cityPickLabel">Which city are you going to?</span>
+        <div class="city-pick" role="radiogroup" aria-labelledby="cityPickLabel">
+          <button type="button" class="city-card" data-city-pick="london" role="radio" aria-checked="false">
+            <span class="city-flag" aria-hidden="true">🇬🇧</span>
+            <span class="city-text"><b>London</b><small>West End theatres</small></span>
+            <span class="city-tick" aria-hidden="true">✓</span>
+          </button>
+          <button type="button" class="city-card" data-city-pick="broadway" role="radio" aria-checked="false">
+            <span class="city-flag" aria-hidden="true">🗽</span>
+            <span class="city-text"><b>New York</b><small>Broadway theatres</small></span>
+            <span class="city-tick" aria-hidden="true">✓</span>
+          </button>
+        </div>
+        <select id="startCity" class="city-select-hidden" tabindex="-1" aria-hidden="true">
           <option value="london">🇬🇧 London · West End</option>
           <option value="broadway">🗽 New York · Broadway</option>
         </select>
+        <div id="cityConfirm" class="city-confirm" aria-live="polite"></div>
       </div>
       <div id="pickerHint" class="picker-hint" aria-live="polite"><span class="picker-step">1</span><span id="pickerHintText">Click your <b>start</b> date</span></div>
       <div class="range-picker-head">
@@ -56,6 +69,59 @@
   document.body.appendChild(warning);
 
   let picker = { month: null, activePart: 0, ranges: [{ start: '', end: '' }], split: false };
+
+  // CITY_CONFIRM_PATCH (5 Nov 2026): make the chosen city impossible to miss on the date dialog.
+  // Two big city buttons replace the small dropdown; the hidden <select id="startCity"> stays the
+  // single source of truth because other scripts read its value, set it, and listen for 'change'.
+  const CITY_INFO = {
+    london: { flag: '🇬🇧', name: 'London', area: 'West End', full: 'London · West End' },
+    broadway: { flag: '🗽', name: 'New York', area: 'Broadway', full: 'New York · Broadway' }
+  };
+  const citySelect = $('startCity');
+  const pickedCity = () => (CITY_INFO[citySelect.value] ? citySelect.value : 'london');
+  let lastSyncedCity = null;
+  let switchedWithDates = false;
+  function syncCityUI() {
+    const city = pickedCity();
+    const info = CITY_INFO[city];
+    document.querySelectorAll('[data-city-pick]').forEach(b => {
+      const on = b.dataset.cityPick === city;
+      b.classList.toggle('selected', on);
+      b.setAttribute('aria-checked', String(on));
+    });
+    if (lastSyncedCity !== city) switchedWithDates = !!lastSyncedCity && picker.ranges.some(r => r?.start);
+    $('cityConfirm').innerHTML = switchedWithDates
+      ? `Switched to <b>${info.flag} ${info.full}</b> — your dates are kept.`
+      : `You are planning a trip to <b>${info.flag} ${info.full}</b>. Shows and times will be for ${info.name}.`;
+    $('continueBtn').textContent = `Continue to the ${info.area} planner →`;
+    $('continueBtn').setAttribute('aria-label', `Continue to the ${info.full} planner`);
+    document.querySelector('.date-picker-modal').dataset.city = city;
+    if (document.body.dataset.city !== city && !document.querySelector('#dateOverlay.hidden')) document.body.dataset.city = city;
+    lastSyncedCity = city;
+    if ($('pickerMonthLabel').textContent) renderPicker();
+  }
+  // Some scripts set startCity.value directly (no 'change' event), so watch the property itself.
+  const valueDesc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+  Object.defineProperty(citySelect, 'value', {
+    configurable: true,
+    get() { return valueDesc.get.call(this); },
+    set(v) { const before = valueDesc.get.call(this); valueDesc.set.call(this, v); if (before !== valueDesc.get.call(this)) syncCityUI(); }
+  });
+  citySelect.addEventListener('change', syncCityUI);
+  document.querySelectorAll('[data-city-pick]').forEach(b => {
+    b.onclick = () => {
+      if (citySelect.value === b.dataset.cityPick) return;
+      citySelect.value = b.dataset.cityPick;
+      citySelect.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+  });
+  // Arrow keys move between the two city buttons (radio-group behaviour).
+  document.querySelector('.city-pick').addEventListener('keydown', e => {
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+    e.preventDefault();
+    const other = document.querySelector(`[data-city-pick]:not([data-city-pick="${pickedCity()}"])`);
+    other.click(); other.focus();
+  });
   let pendingPlan = null;
 
   // NO_PAST_DATES_PATCH: trip planning is only allowed for today or future dates.
@@ -108,7 +174,7 @@
     const current = monthDate();
     const y = current.getFullYear();
     const m = current.getMonth();
-    $('pickerMonthLabel').textContent = current.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    $('pickerMonthLabel').innerHTML = `${current.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })} <span class="month-city">${CITY_INFO[pickedCity()].flag} ${CITY_INFO[pickedCity()].name}</span>`;
     const todayForNav=parseISO(localTodayISO());
     const firstAllowedMonth=new Date(todayForNav.getFullYear(),todayForNav.getMonth(),1,12);
     $('pickerPrev').disabled=current<=firstAllowedMonth;
@@ -188,7 +254,7 @@
       hint.innerHTML = `<span class="picker-step">2</span><span id="pickerHintText">Now click your <b>end</b> date <small>(start: ${short(active.start)})</small></span>`;
     } else {
       hint.className = 'picker-hint step-done';
-      hint.innerHTML = `<span class="picker-step">✓</span><span id="pickerHintText"><b>${short(active.start)} – ${short(active.end)}</b> selected — press Continue, or click a date to start over</span>`;
+      hint.innerHTML = `<span class="picker-step">✓</span><span id="pickerHintText"><b>${short(active.start)} – ${short(active.end)}</b> in <b>${CITY_INFO[pickedCity()].name}</b> selected — press Continue, or click a date to start over</span>`;
     }
   }
 
@@ -560,6 +626,7 @@
   $('startCity').value = state.city;
   setMonthFromISO(iso(new Date()));
   renderPicker();
+  syncCityUI();
   renderCities();
   showSavedNotice();
 
