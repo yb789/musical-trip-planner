@@ -1,7 +1,8 @@
 // Calendar-first planning (2026-10-31, requested by Yuval).
 // After choosing dates the planner opens on a calendar of the trip: every day has a Matinee and an
-// Evening slot, plus a Morning slot (starts before 12:00) or a Late slot (from 21:30) on days that
-// have such performances. Pressing a slot opens a pop-up with the shows playing then; choosing one
+// Evening slot, plus a Morning slot (starts before 12:00), an Early evening slot (17:00-18:29, added
+// 2026-11-06 for short shows such as Oh, Mary! that make three-show days possible) or a Late slot
+// (from 21:30) on days that have such performances. Pressing a slot opens a pop-up with the shows playing then; choosing one
 // fills the slot. Shows already in the plan elsewhere are marked in the lists (pop-up and day view),
 // and choosing one again asks for confirmation (the existing duplicate dialog). The show filter sits
 // at the top of the planner and covers the whole trip; "Change dates" is in the planner header.
@@ -11,7 +12,8 @@
   const SLOT_INFO={
     morning:{icon:'🌅',label:'Morning',hint:'Starts before 12:00'},
     matinee:{icon:'☀️',label:'Matinee',hint:'Starts 12:00 – 16:59'},
-    evening:{icon:'🌙',label:'Evening',hint:'Starts 17:00 – 21:29'},
+    early:{icon:'🌇',label:'Early evening',hint:'Starts 17:00 – 18:29'},
+    evening:{icon:'🌙',label:'Evening',hint:'Starts 18:30 – 21:29'},
     late:{icon:'🌌',label:'Late',hint:'Starts 21:30 or later'}
   };
   const shortDay=d=>fmt(d,{weekday:'short',day:'numeric',month:'short'});
@@ -218,6 +220,7 @@
       // Day-by-day summary: the extra Morning / Late choices.
       const ch=choices()[state.active]||{},line=(k,c)=>`<div class="pc-extra-choice">${SLOT_INFO[k].label}: <b data-show="${esc(c.name)}">${esc(cleanShowTitle(c.name))}</b>${kindPill(c.name)} · ${esc(c.time)}</div>`;
       if(ch.morning&&$('matineeChoice'))$('matineeChoice').insertAdjacentHTML('afterbegin',line('morning',ch.morning));
+      if(ch.early&&$('eveningChoice'))$('eveningChoice').insertAdjacentHTML('afterbegin',line('early',ch.early));
       if(ch.late&&$('eveningChoice'))$('eveningChoice').insertAdjacentHTML('beforeend',line('late',ch.late));
       renderPlanCal();
     }catch(e){console.error(e)}
