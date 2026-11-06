@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   const { plan } = found;
   const events = [];
   for (const date of Object.keys(plan.choices).sort()) {
-    for (const sess of ["morning", "matinee", "evening", "late"]) {
+    for (const sess of ["morning", "matinee", "early", "evening", "late"]) {
       const c = plan.choices[date][sess];
       if (!c || !c.time) continue;
       const g = guideEntryFor(CITY_SLUG[plan.city] || "london", c.name);

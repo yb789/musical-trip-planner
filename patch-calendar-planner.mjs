@@ -2,7 +2,8 @@ import fs from 'node:fs';
 
 // Calendar-first planning (2026-10-31, Yuval). See calendar-planner.js.
 // 1. Generalises the per-day choice from {matinee, evening} to MH_SESSIONS
-//    (morning < 12:00, matinee < 17:00, evening < 21:30, late) everywhere in the built page.
+//    (morning < 12:00, matinee < 17:00, early evening < 18:30, evening < 21:30, late) everywhere in the built page.
+//    The early-evening slot (2026-11-06) lets a short 17:00 show sit between a matinee and an evening show.
 // 2. Moves the show filter into the top of the planner panel, adds the planner header with
 //    "Change dates", the Calendar tab (default) and its pop-up, and inlines the new code.
 // Must run LAST in build.mjs: it rewrites strings that the earlier patches produce.
@@ -18,9 +19,9 @@ function replaceCount(search, replacement, expected, label) {
 }
 
 // ---- 1. Sessions ----
-const helpers = `const MH_SESSIONS=['morning','matinee','evening','late'];
-function sessionOf(t){const m=mins(String(t||'0:0'));return m<720?'morning':m<1020?'matinee':m<1290?'evening':'late'}
-function mhSessionLabel(k,long){return ({morning:'Morning',matinee:long?'Matinee / Afternoon':'Matinee',evening:'Evening',late:'Late evening'})[k]||k}
+const helpers = `const MH_SESSIONS=['morning','matinee','early','evening','late'];
+function sessionOf(t){const m=mins(String(t||'0:0'));return m<720?'morning':m<1020?'matinee':m<1110?'early':m<1290?'evening':'late'}
+function mhSessionLabel(k,long){return ({morning:'Morning',matinee:long?'Matinee / Afternoon':'Matinee',early:'Early evening',evening:'Evening',late:'Late evening'})[k]||k}
 function mhAnySession(d){return !!d&&MH_SESSIONS.some(k=>d[k])}
 function mhCountSessions(d){return d?MH_SESSIONS.filter(k=>d[k]).length:0}
 function mhKeyFor(name,time){const ch=choices()[state.active]||{};return MH_SESSIONS.find(k=>ch[k]&&ch[k].name===name&&ch[k].time===time)||sessionOf(time)}
@@ -47,7 +48,7 @@ replaceCount("sess==='matinee'?'Matinee / Afternoon':'Evening'", 'mhSessionLabel
 replaceCount("session === 'matinee' ? 'Matinee / Afternoon' : 'Evening'", 'mhSessionLabel(session,1)', 1, 'export rows label (date-calendar)');
 replaceCount("session==='matinee'?'Matinee / Afternoon':'Evening'", 'mhSessionLabel(session,1)', 1, 'confirmation rows label');
 replaceCount("$(session==='matinee'?'matineeChoice':'eveningChoice')", "$(session==='morning'||session==='matinee'?'matineeChoice':'eveningChoice')", 1, 'confirmation fallback');
-replaceCount("{matinee:'Matinee',evening:'Evening'}", "{morning:'Morning',matinee:'Matinee',evening:'Evening',late:'Late'}", 1, 'checklist labels');
+replaceCount("{matinee:'Matinee',evening:'Evening'}", "{morning:'Morning',matinee:'Matinee',early:'Early evening',evening:'Evening',late:'Late'}", 1, 'checklist labels');
 
 // ---- 2. Markup ----
 const asideStart = s.indexOf('<aside id="sidebar"');
@@ -84,4 +85,4 @@ replaceCount('</head>', `<style id="calendar-planner-css">/* CALENDAR_PLANNER_PA
 replaceCount('</body>', `<script id="calendar-planner-script">\n${js}\n</script>\n</body>`, 1, 'body');
 
 fs.writeFileSync(file, s);
-console.log('patch-calendar-planner: calendar-first planning, morning/late slots, filter at the top.');
+console.log('patch-calendar-planner: calendar-first planning, morning/early-evening/late slots, filter at the top.');

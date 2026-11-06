@@ -3,8 +3,8 @@ import { guideEntryFor, goPath } from "../lib/site-pages.js";
 
 const KIND_LABEL = { play: "Play", spectacular: "Spectacular", concert: "Concert", family: "Family show" };
 const CITY_SLUG = { london: "london", broadway: "new-york" };
-const SESSION_LABEL = { morning: "Morning", matinee: "Matinee", evening: "Evening", late: "Late evening" };
-const SESSION_ICON = { morning: "🌅", matinee: "☀️", evening: "🌙", late: "🌌" };
+const SESSION_LABEL = { morning: "Morning", matinee: "Matinee", early: "Early evening", evening: "Evening", late: "Late evening" };
+const SESSION_ICON = { morning: "🌅", matinee: "☀️", early: "🌇", evening: "🌙", late: "🌌" };
 
 // Read-only page for a shared itinerary. Reached through the vercel.json rewrite  /plan/:code -> /api/plan-page?code=:code
 // Server-rendered so WhatsApp / iMessage / Facebook see per-plan Open Graph tags and a per-plan image (/api/og?plan=CODE).
@@ -69,7 +69,7 @@ export function renderPlan(code, plan) {
   const description = `${shows} chosen performance${shows === 1 ? "" : "s"} over ${days} day${days === 1 ? "" : "s"} in ${cityLabel(plan.city)}. Open it in Musical Trip Planner to edit or make your own.`;
   const dates = Object.keys(plan.choices).sort();
   const dayHtml = dates.map(d => {
-    const perfs = ["morning", "matinee", "evening", "late"].map(sess => {
+    const perfs = ["morning", "matinee", "early", "evening", "late"].map(sess => {
       const c = plan.choices[d][sess];
       if (!c) return "";
       const links = [
