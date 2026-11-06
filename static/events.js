@@ -3,10 +3,14 @@
 // ticket (affiliate) clicks, shared plan opened. The server adds the visitor's country from Vercel's
 // geolocation header; the IP address itself is never stored.
 // Opt out on this browser: open any page with ?notrack=1 (undo with ?notrack=0). Used to keep the
-// owner's own visits out of the numbers.
+// owner's own visits out of the numbers; ticket links then carry nt=1 so /go doesn't count them either.
 (function(){
   var off=false;try{var q=location.search.match(/[?&]notrack=([01])\b/);if(q){if(q[1]==='1')localStorage.setItem('mtpNoTrack','1');else localStorage.removeItem('mtpNoTrack')}off=localStorage.getItem('mtpNoTrack')==='1'}catch(e){}
-  if(off){window.mtpTrack=function(){};return}
+  if(off){window.mtpTrack=function(){};
+    // Ticket clicks are counted on the server by /go, so tell it not to count this browser's clicks.
+    var nt=function(e){var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname===location.hostname&&u.pathname==='/go'&&u.searchParams.get('nt')!=='1'){u.searchParams.set('nt','1');a.href=u.toString()}}catch(x){}};
+    document.addEventListener('mousedown',nt,true);document.addEventListener('click',nt,true);document.addEventListener('keydown',function(e){if(e.key==='Enter')nt(e)},true);
+    return}
   var city=function(){try{var c=(window.state&&state.city)||document.body.dataset.city||'';if(!c){var m=location.pathname.match(/^\/(london|new-york)\b/);c=m?(m[1]==='new-york'?'broadway':'london'):''}return c==='new-york'?'broadway':c}catch(e){return ''}};
   function send(event,extra){try{var b=JSON.stringify(Object.assign({event:event,page:location.pathname,city:city()},extra||{}));if(navigator.sendBeacon){navigator.sendBeacon('/api/event',new Blob([b],{type:'application/json'}))}else{fetch('/api/event',{method:'POST',headers:{'Content-Type':'application/json'},body:b,keepalive:true}).catch(function(){})}}catch(e){}}
   window.mtpTrack=send;
