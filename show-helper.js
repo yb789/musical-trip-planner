@@ -44,7 +44,7 @@
   // 'offbroadway' (Yuval, 1 Nov 2026) is New York-only too: Off-Broadway musicals (guide field offBroadway)
   // appear only when it is ticked. An Off-Broadway show of another kind (Masquerade, a spectacular) shows
   // with either its own kind's box or this one.
-  const KINDS = [['musical', 'Musicals'], ['offbroadway', 'Off-Broadway', 'broadway'], ['play', 'Big plays'], ['spectacular', 'Spectaculars & concerts'], ['family', 'Family shows'], ['radiocity', 'Radio City Music Hall', 'broadway']];
+  const KINDS = [['musical', 'Musicals'], ['offbroadway', 'Off-Broadway', 'broadway'], ['play', 'Plays'], ['spectacular', 'Spectaculars & concerts'], ['family', 'Family shows'], ['radiocity', 'Radio City Music Hall', 'broadway']];
   const kindsFor = city => KINDS.filter(k => !k[2] || k[2] === city);
   const hs = { city: 'london', step: 0, ans: {}, short: { london: [], broadway: [] }, hearts: new Set(), screen: '', kinds: ['musical'] };
   try {
