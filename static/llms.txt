@@ -1,6 +1,6 @@
 # Musical Trip Planner
 
-> A free web app for planning musical-theatre trips to London (West End) and New York (Broadway). Pick a city and trip dates; the planner fetches the live performance schedule for those dates, shows only musicals playing each day, and lets you choose up to one matinee and one evening performance per day. It shows theatre names and addresses, links to ticket sellers, and exports the itinerary to PDF or Excel. It is not a ticket seller.
+> A free web app for planning musical-theatre trips to London (West End) and New York (Broadway). Pick a city and trip dates; the planner fetches the live performance schedule for those dates, shows only musicals playing each day, and lets you choose a matinee and an evening performance each day, plus morning, early-evening (17:00–18:29) or late shows on days that have them. It shows theatre names and addresses, links to ticket sellers, and exports the itinerary to PDF or Excel. It is not a ticket seller.
 
 - Site: https://musicaltripplanner.com/
 - Cities: London · West End; New York · Broadway

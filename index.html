@@ -10,7 +10,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Musical Trip Planner">
 <meta property="og:title" content="Musical Trip Planner — plan West End & Broadway shows by date">
-<meta property="og:description" content="Pick your trip dates, see which musicals play each day, choose one matinee and one evening show per day, and export your itinerary. Free, no ads.">
+<meta property="og:description" content="Pick your trip dates, see which musicals play each day, choose a matinee and an evening show (or three when the times allow), and export your itinerary. Free, no ads.">
 <meta property="og:url" content="https://musicaltripplanner.com/">
 <meta property="og:image" content="https://musicaltripplanner.com/api/og">
 <meta property="og:image:width" content="1200">
@@ -18,7 +18,7 @@
 <meta property="og:image:alt" content="Musical Trip Planner — plan West End and Broadway shows by date">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Musical Trip Planner — plan West End & Broadway shows by date">
-<meta name="twitter:description" content="Pick your trip dates, see which musicals play each day, choose one matinee and one evening show per day, and export your itinerary. Free, no ads.">
+<meta name="twitter:description" content="Pick your trip dates, see which musicals play each day, choose a matinee and an evening show (or three when the times allow), and export your itinerary. Free, no ads.">
 <meta name="twitter:image" content="https://musicaltripplanner.com/api/og">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/api/og?icon=32" type="image/png" sizes="32x32">
@@ -27,7 +27,7 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
  {"@type":"WebSite","@id":"https://musicaltripplanner.com/#website","url":"https://musicaltripplanner.com/","name":"Musical Trip Planner","description":"Plan West End and Broadway musical-theatre trips by date.","inLanguage":"en"},
- {"@type":"WebApplication","@id":"https://musicaltripplanner.com/#app","name":"Musical Trip Planner","url":"https://musicaltripplanner.com/","applicationCategory":"TravelApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free planner for London West End and New York Broadway trips: choose dates, see which musicals play each day, pick one matinee and one evening performance per day, get theatre addresses and export the itinerary to PDF or Excel.","featureList":["Live date-specific West End and Broadway schedules","One matinee and one evening performance per day","Theatre names and addresses","Duplicate-show warning","Ticket links to third-party sellers","PDF and Excel export","Works on phones and desktops"],"about":[{"@type":"Place","name":"West End, London"},{"@type":"Place","name":"Broadway, New York"}]}
+ {"@type":"WebApplication","@id":"https://musicaltripplanner.com/#app","name":"Musical Trip Planner","url":"https://musicaltripplanner.com/","applicationCategory":"TravelApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free planner for London West End and New York Broadway trips: choose dates, see which musicals play each day, pick a matinee and an evening performance each day (or three when the times allow), get theatre addresses and export the itinerary to PDF or Excel.","featureList":["Live date-specific West End and Broadway schedules","One matinee and one evening performance per day","Theatre names and addresses","Duplicate-show warning","Ticket links to third-party sellers","PDF and Excel export","Works on phones and desktops"],"about":[{"@type":"Place","name":"West End, London"},{"@type":"Place","name":"Broadway, New York"}]}
 ]}
 </script>
 <script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
@@ -61,7 +61,7 @@ button{min-height:44px}.pick{min-height:40px}.day-btn{min-width:64px}.tab{flex:1
 </style>
 </head>
 <body>
-<header><div class="wrap"><h1>Musical Trip Planner</h1><p>Plan West End or Broadway shows: up to one matinee and one evening show per day.</p><div class="badge">Live date-specific schedules · duplicate musicals require confirmation</div></div></header>
+<header><div class="wrap"><h1>Musical Trip Planner</h1><p>Plan West End or Broadway shows: a matinee and an evening show each day, or three when the times allow.</p><div class="badge">Live date-specific schedules · duplicate musicals require confirmation</div></div></header>
 
 <div id="dateOverlay" class="overlay"><div class="modal"><h2>Choose your city and trip dates</h2><p class="small">Choose London or New York and the date range you want to plan. The planner will search live musical schedules for that city and those dates.</p><div class="field city-field"><label for="startCity">City</label><select id="startCity"><option value="london">🇬🇧 London · West End</option><option value="broadway">🗽 New York · Broadway</option></select></div><div class="date-grid"><div class="field"><label>From</label><input id="startInput" type="date"></div><div class="field"><label>To</label><input id="endInput" type="date"></div></div><div id="dateError" class="error"></div><div class="actions"><button id="continueBtn" class="primary">Continue to planner</button></div></div></div>
 <div id="loadingOverlay" class="overlay hidden"><div class="modal"><div class="spinner"></div><h2>Searching live musical schedules…</h2><p id="loadingText" class="small"></p></div></div>
