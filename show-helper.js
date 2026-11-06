@@ -97,6 +97,16 @@
   };
   window.mhConcertsAllowed = () => hs.kinds.includes(concertBox());
   window.mhExtraKinds = () => hs.kinds.some(k => k !== 'musical' && kindsFor(curCity()).some(([id]) => id === k));
+  // The date dialog (6 Nov 2026, Yuval) shows the chosen show types and lets the visitor change them
+  // before pressing Continue. Same list and storage as the start screen's tick boxes.
+  window.mhKindChoices = city => kindsFor(CITIES.includes(city) ? city : curCity()).map(([id, label]) => ({ id, label, on: hs.kinds.includes(id) }));
+  window.mhSetKind = (id, on) => {
+    if (id === 'musical' || !KINDS.some(([k]) => k === id)) return;
+    hs.kinds = on ? [...new Set([...hs.kinds, id])] : hs.kinds.filter(k => k !== id);
+    persist();
+    try { if (state.start && state.end) refreshPlanner(); } catch {}
+    document.dispatchEvent(new CustomEvent('mh-kinds-change'));
+  };
   window.mhGuideEntry = name => {
     const city = (typeof state !== 'undefined' && CITIES.includes(state.city)) ? state.city : hs.city;
     return entryForName(city, name) || entryForName(city === 'london' ? 'broadway' : 'london', name);
@@ -291,6 +301,7 @@
       if (id === 'musical') { b.checked = true; return; }
       hs.kinds = b.checked ? [...new Set([...hs.kinds, id])] : hs.kinds.filter(k => k !== id);
       persist();
+      document.dispatchEvent(new CustomEvent('mh-kinds-change'));
       try { if (typeof refreshPlanner === 'function' && state.start && state.end) refreshPlanner(); } catch {}
       return;
     }
