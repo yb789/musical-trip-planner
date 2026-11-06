@@ -49,6 +49,7 @@
       <div id="pickerCalendar" class="picker-calendar"></div>
       <div id="rangeParts" class="range-parts"></div>
       <div id="dateCountNote" class="date-count-note"></div>
+      <div id="kindPick" class="kind-pick"></div>
       <div id="dateError" class="error"></div>
       <div class="actions"><a class="back-start" href="#/start">← Back to the start screen</a><button id="continueBtn" class="primary">Continue to planner</button></div>
     </div>`;
@@ -170,6 +171,24 @@
     return !!(range?.start && range?.end && date >= range.start && date <= range.end);
   }
 
+  // KIND_PICK_PATCH (6 Nov 2026, Yuval): the show types chosen on the start screen are shown here and
+  // can be changed before Continue. show-helper.js owns the list (window.mhKindChoices / mhSetKind).
+  function renderKindPick() {
+    const box = $('kindPick');
+    if (!box) return;
+    if (typeof window.mhKindChoices !== 'function') { box.innerHTML = ''; return; }
+    const list = window.mhKindChoices(pickedCity());
+    const chosen = list.filter(k => k.on).map(k => k.label);
+    box.innerHTML = `<div class="kind-pick-head"><b id="kindPickLabel">Show types in your planner</b><span class="kind-pick-sum">${esc(chosen.join(' · '))}</span></div>
+      <div class="kind-pick-row" role="group" aria-labelledby="kindPickLabel">${list.map(k => `<label class="kind-chip${k.id === 'musical' ? ' fixed' : ''}"><input type="checkbox" data-kind-pick="${k.id}" ${k.on ? 'checked' : ''} ${k.id === 'musical' ? 'disabled' : ''}> ${esc(k.label)}</label>`).join('')}</div>
+      <p class="kind-pick-note">Musicals are always included. Tick the other types you want to see; you can change this again later.</p>`;
+    box.querySelectorAll('[data-kind-pick]').forEach(i => {
+      i.onchange = () => { window.mhSetKind(i.dataset.kindPick, i.checked); };
+    });
+  }
+  document.addEventListener('mh-kinds-change', renderKindPick);
+  window.addEventListener('load', renderKindPick); // show-helper.js may be inlined after this script
+
   function renderPicker() {
     const current = monthDate();
     const y = current.getFullYear();
@@ -230,6 +249,7 @@
       };
     });
 
+    renderKindPick();
     const count = pickerDayCount();
     const note = $('dateCountNote');
     if (count > 21) {
