@@ -21,5 +21,10 @@ const withPrivacy = '<a href="/about/">About us &amp; contact</a> · <a href="/p
 if (s.includes(aboutLink)) s = s.split(aboutLink).join(withPrivacy);
 else if (!s.includes(withPrivacy)) { console.error('patch-pwa: about link in the disclaimer not found'); process.exit(1); }
 
+// Terms link next to Privacy (added Nov 2026 for the Google Play listing).
+const privacyEnd = '<a href="/privacy/">Privacy</a></section>';
+const withTerms = '<a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a></section>';
+if (s.includes(privacyEnd)) s = s.split(privacyEnd).join(withTerms);
+
 fs.writeFileSync(file, s);
-console.log('PWA: service worker registration and privacy link added.');
+console.log('PWA: service worker registration, privacy and terms links added.');

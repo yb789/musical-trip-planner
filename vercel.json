@@ -123,6 +123,14 @@
       "destination": "/api/pages?type=privacy"
     },
     {
+      "source": "/terms",
+      "destination": "/api/pages?type=terms"
+    },
+    {
+      "source": "/terms/",
+      "destination": "/api/pages?type=terms"
+    },
+    {
       "source": "/",
       "destination": "/index.html"
     },

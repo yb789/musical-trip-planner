@@ -1,4 +1,4 @@
-import { CITIES, renderShow, renderCity, renderMatinees, renderGuide, renderGuidesIndex, renderAbout, renderPrivacy, notFound } from "../lib/site-pages.js";
+import { CITIES, renderShow, renderCity, renderMatinees, renderGuide, renderGuidesIndex, renderAbout, renderPrivacy, renderTerms, notFound } from "../lib/site-pages.js";
 import { loadSchedule } from "../lib/schedule-data.js";
 import { handleGo } from "../lib/go.js";
 
@@ -44,6 +44,7 @@ export default async function handler(req, res) {
     }
     else if (type === "about") html = renderAbout();
     else if (type === "privacy") html = renderPrivacy();
+    else if (type === "terms") html = renderTerms();
     else if (type === "guide" && !slug) html = renderGuidesIndex();
     else if (type === "guide" && /^[a-z0-9-]{1,80}$/.test(slug)) html = renderGuide(slug);
     if (!html) {
