@@ -119,14 +119,17 @@
   }
   function slotHtml(date,s){
     const i=SLOT_INFO[s.k],lbl=`<span class="pc-slot-lbl">${i.icon} ${i.label}</span>`;
+    // Matinee and evening are the main slots and get bigger boxes; morning, early evening and
+    // late are compact extras (2026-11-08, Yuval).
+    const size=(s.k==='matinee'||s.k==='evening')?' pc-main':' pc-minor';
     if(s.c){
       const booked=s.c.booked||s.c.bookingReference;
       const cl=clashes(date,s.c.name,s.c.time,s.k);
       const warn=cl.length?`<span class="pc-slot-warn" title="${esc(cl.map(x=>clashText(x,false)).join(' '))}">⚠ ${cl.some(x=>x.overlap)?'Overlaps another show':'Tight timing'}</span>`:'';
-      return `<button type="button" class="pc-slot filled${cl.length?' tight':''}" data-date="${date}" data-slot="${s.k}" data-kind="${esc(s.c.kind||kindOfShow(s.c.name))}" title="Change or remove the ${i.label.toLowerCase()} show">${lbl}<b class="pc-slot-show">${esc(cleanShowTitle(s.c.name))}</b><span class="pc-slot-time">${esc(s.c.time)}${partLabel(s.c.name,s.c.time,date)?' · '+partLabel(s.c.name,s.c.time,date):''}${booked?' · <span class="pc-booked">✓ Booked</span>':''}</span>${warn}</button>`;
+      return `<button type="button" class="pc-slot${size} filled${cl.length?' tight':''}" data-date="${date}" data-slot="${s.k}" data-kind="${esc(s.c.kind||kindOfShow(s.c.name))}" title="Change or remove the ${i.label.toLowerCase()} show">${lbl}<b class="pc-slot-show">${esc(cleanShowTitle(s.c.name))}</b><span class="pc-slot-time">${esc(s.c.time)}${partLabel(s.c.name,s.c.time,date)?' · '+partLabel(s.c.name,s.c.time,date):''}${booked?' · <span class="pc-booked">✓ Booked</span>':''}</span>${warn}</button>`;
     }
-    if(!s.n)return `<div class="pc-slot none">${lbl}<span class="pc-slot-add">No ${i.label.toLowerCase()} shows</span></div>`;
-    return `<button type="button" class="pc-slot empty" data-date="${date}" data-slot="${s.k}" title="See the ${s.n} ${i.label.toLowerCase()} show${s.n===1?'':'s'}">${lbl}<span class="pc-slot-add">+ Choose · ${s.n} show${s.n===1?'':'s'}</span></button>`;
+    if(!s.n)return `<div class="pc-slot${size} none" data-slot="${s.k}">${lbl}<span class="pc-slot-add">No ${i.label.toLowerCase()} shows</span></div>`;
+    return `<button type="button" class="pc-slot${size} empty" data-date="${date}" data-slot="${s.k}" title="See the ${s.n} ${i.label.toLowerCase()} show${s.n===1?'':'s'}">${lbl}<span class="pc-slot-add">+ Choose · ${s.n} show${s.n===1?'':'s'}</span></button>`;
   }
 
   function renderPlanCal(){
