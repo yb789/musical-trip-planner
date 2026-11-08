@@ -489,7 +489,8 @@
         if(!choice)continue;
         const sessionLabel=session==='matinee'?'Matinee / Afternoon':'Evening';
         const cleanName=typeof cleanShowTitle==='function'?cleanShowTitle(choice.name):choice.name;
-        if(sessionLabel===row.session&&choice.time===row.time&&cleanName===row.musical)return choice;
+        // Two-part shows (Harry Potter) get " — Part One/Two" appended to the row title.
+        if(sessionLabel===row.session&&choice.time===row.time&&(cleanName===row.musical||String(row.musical).startsWith(cleanName+' — ')))return choice;
       }
     }
     return null;
@@ -504,11 +505,25 @@
     });
   };
 
+  // Booked status in the exports (2026-11-08, Yuval): "Mark as booked" (booking checklist) sets
+  // choice.booked; a saved confirmation reference also counts as booked. Ticket links stay in the
+  // row so the file still opens the seller sites for convenience.
+  const rowsWithTickets=selectedRows;
+  selectedRows=function(){
+    return rowsWithTickets().map(row=>{
+      const choice=choiceForExportRow(row);
+      const booked=!!(choice&&(choice.booked||choice.bookingReference));
+      return {...row,booked,status:booked?'Booked':'Not booked yet'};
+    });
+  };
+
   exportExcel=function(){
     const rows=selectedRows();
     if(!rows.length)return alert('There are no selected performances to export.');
     const headers=['City','Date','Session','Start Time','Musical','Theater / Venue','Address','Booking Confirmation','Seat','Ticket PDF Check','Ticket Website','Theater / Venue Website'];
     const keys=['city','date','session','time','musical','venue','address','bookingReference','seat','ticketMatch','ticket','theatre'];
+    const statusAt=keys.indexOf('bookingReference');
+    if(statusAt>=0){headers.splice(statusAt,0,'Status');keys.splice(statusAt,0,'status');}
     const e=value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     let xml=`<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Schedule"><Table>`;
     xml+='<Row>'+headers.map(h=>`<Cell><Data ss:Type="String">${e(h)}</Data></Cell>`).join('')+'</Row>';
@@ -522,7 +537,7 @@
     const rows=selectedRows();
     if(!rows.length)return alert('There are no selected performances to export.');
     const rangeText=typeof tripRangeText==='function'?tripRangeText():`${fmt(state.start)} – ${fmt(state.end)}`;
-    $('printReport').innerHTML=`<h1>Musical Trip Schedule</h1><p><b>${esc(cityLabel())}</b><br>${esc(rangeText)}</p><table><thead><tr><th>Date</th><th>Session</th><th>Time</th><th>Musical</th><th>Theater / Venue</th><th>Address</th><th>Booking Confirmation</th><th>Seat</th><th>Ticket PDF Check</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.date)}</td><td>${esc(row.session)}</td><td>${esc(row.time)}</td><td>${esc(row.musical)}</td><td>${esc(row.venue||'')}</td><td>${esc(row.address||'')}</td><td>${esc(row.bookingReference||'')}</td><td>${esc(row.seat||'')}</td><td>${esc(row.ticketMatch||'')}</td></tr>`).join('')}</tbody></table><p style="font-size:9px">Ticket confirmation PDFs are processed locally in the browser and are not stored by this planner. The PDF match check is an automated aid and may be incomplete; users should verify the show, date, time, venue, and booking reference against the original ticket confirmation. Ticket purchases are handled solely by third-party providers.</p>`;
+    $('printReport').innerHTML=`<h1>Musical Trip Schedule</h1><p><b>${esc(cityLabel())}</b><br>${esc(rangeText)}</p><table><thead><tr><th>Date</th><th>Session</th><th>Time</th><th>Musical</th><th>Theater / Venue</th><th>Address</th><th>Booking Confirmation</th><th>Seat</th><th>Ticket PDF Check</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.date)}</td><td>${esc(row.session)}</td><td>${esc(row.time)}</td><td>${esc(row.musical)}</td><td>${esc(row.venue||'')}</td><td>${esc(row.address||'')}</td><td>${esc(row.bookingReference||(row.booked?'Booked':''))}</td><td>${esc(row.seat||'')}</td><td>${esc(row.ticketMatch||'')}</td></tr>`).join('')}</tbody></table><p style="font-size:9px">Ticket confirmation PDFs are processed locally in the browser and are not stored by this planner. The PDF match check is an automated aid and may be incomplete; users should verify the show, date, time, venue, and booking reference against the original ticket confirmation. Ticket purchases are handled solely by third-party providers.</p>`;
     window.print();
   };
 

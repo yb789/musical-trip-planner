@@ -54,6 +54,10 @@
     doc.text(clean(`${cityLabel()}  |  ${range}`), left, 64);
 
     const hasTickets = rows.some(r => r.bookingReference || r.seat || r.ticketMatch);
+    // Booked status (2026-11-08): rows marked as booked in the planner say BOOKED (green) and get a
+    // light green background; their ticket links are kept for convenience (seat changes, add-ons).
+    const hasBooked = rows.some(r => r.booked);
+    const showBooking = hasTickets || hasBooked;
     // Ticket link columns: clickable SeatPlan / Ticketmaster links per row (tracked affiliate links
     // from selectedRows()). A column is only added when at least one row has that link.
     const isUrl = v => /^https?:\/\//.test(v || '');
@@ -61,20 +65,20 @@
       { key: 'ticket', head: 'SeatPlan', label: portrait ? 'Book' : 'Tickets on SeatPlan' },
       { key: 'ticketmaster', head: 'Ticketmaster', label: portrait ? 'Book' : 'Tickets on Ticketmaster' }
     ].filter(d => rows.some(r => isUrl(r[d.key])));
-    let head, body, kindCol, columnStyles = {};
+    let head, body, kindCol, statusCol = -1, columnStyles = {};
     const linkCols = {};
     if (portrait) {
       // When | Show (+kind) | Theatre (+address) | link columns | Booking
       head = ['When', 'Show', 'Theatre / Venue'];
       kindCol = -1;
       for (const d of linkDefs) { linkCols[head.length] = d.key; head.push(d.head); }
-      if (hasTickets) head.push('Booking');
+      if (showBooking) { statusCol = head.length; head.push('Booking'); }
       body = rows.map(r => {
         const kind = r.kind && r.kind !== 'Musical' ? `\n${r.kind}` : '';
         const shortDate = String(r.date || '').replace(/^(\w{3})\w*,/, '$1').replace(/ (\w{3})\w* (\d{4})$/, ' $1 $2');
         const line = [`${shortDate}\n${r.session} ${r.time}`, `${r.musical}${kind}`, [r.venue, r.address].filter(Boolean).join('\n')];
-        for (const d of linkDefs) line.push(isUrl(r[d.key]) ? d.label : '');
-        if (hasTickets) line.push([r.bookingReference && `Ref: ${r.bookingReference}`, r.seat && `Seat: ${r.seat}`, r.ticketMatch].filter(Boolean).join('\n'));
+        for (const d of linkDefs) line.push(isUrl(r[d.key]) ? (r.booked ? 'Link' : d.label) : '');
+        if (showBooking) line.push([r.booked ? 'BOOKED' : 'Not booked yet', r.bookingReference && `Ref: ${r.bookingReference}`, r.seat && `Seat: ${r.seat}`, r.ticketMatch].filter(Boolean).join('\n'));
         return line.map(clean);
       });
       columnStyles = { 0: { cellWidth: 100 }, 1: { cellWidth: 120, fontStyle: 'bold' } };
@@ -83,14 +87,17 @@
       head = ['Date', 'Session', 'Time', 'Show', 'Kind', 'Theatre / Venue', 'Address'];
       kindCol = 4;
       for (const d of linkDefs) { linkCols[head.length] = d.key; head.push(d.head); }
+      if (showBooking) { statusCol = head.length; head.push('Status'); }
       if (hasTickets) head.push('Booking ref.', 'Seat', 'Ticket PDF check');
       body = rows.map(r => {
         const line = [r.date, r.session, r.time, r.musical, r.kind || 'Musical', r.venue || '', r.address || ''];
         for (const d of linkDefs) line.push(isUrl(r[d.key]) ? d.label : '');
+        if (showBooking) line.push(r.booked ? 'BOOKED' : 'Not booked yet');
         if (hasTickets) line.push(r.bookingReference || '', r.seat || '', r.ticketMatch || '');
         return line.map(clean);
       });
     }
+    if (!portrait && statusCol >= 0) columnStyles[statusCol] = { cellWidth: 62 };
     for (const [i, key] of Object.entries(linkCols)) columnStyles[i] = { ...(columnStyles[i] || {}), textColor: key === 'ticketmaster' ? [2, 77, 223] : [124, 45, 18], fontStyle: 'bold' };
     const KIND_RGB = { Play: [79, 70, 160], Spectacular: [180, 86, 13], Concert: [15, 110, 120], 'Family show': [31, 122, 77] };
     doc.autoTable({
@@ -101,7 +108,14 @@
       columnStyles,
       // Kind column coloured like the planner (play purple, spectacular amber, family green).
       didParseCell: data => {
-        if (data.section !== 'body' || data.column.index !== kindCol) return;
+        if (data.section !== 'body') return;
+        if (rows[data.row.index]?.booked) data.cell.styles.fillColor = [223, 242, 228];
+        if (data.column.index === statusCol) {
+          if (rows[data.row.index]?.booked) { data.cell.styles.textColor = [22, 120, 60]; data.cell.styles.fontStyle = 'bold'; }
+          else data.cell.styles.textColor = [120, 120, 120];
+          return;
+        }
+        if (data.column.index !== kindCol) return;
         const col = KIND_RGB[String(data.cell.raw || '')];
         if (col) { data.cell.styles.textColor = col; data.cell.styles.fontStyle = 'bold'; }
       },
