@@ -79,3 +79,18 @@ body.pc-mode .next-day{display:none}
 .pc-slot-warn{margin-top:2px;font-size:11px;font-weight:800;color:#8a5a00;background:#ffe6a8;border-radius:999px;padding:1px 7px}
 .pc-tight{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:#8a2515;background:#fde3dc;border-radius:999px;padding:2px 9px}
 #tightText p{margin:0 0 10px}
+/* Main vs extra slots (2026-11-08): matinee and evening are the big boxes; morning, early evening
+   and late are compact strips so the two main shows stand out. */
+.pc-slot.pc-main{min-height:78px;padding:8px 9px}
+.pc-slot.pc-main .pc-slot-show{font-size:14px}
+.pc-slot.pc-main.none{min-height:78px}
+.pc-slot.pc-minor{min-height:0;padding:3px 7px;font-size:11px;border-radius:7px}
+.pc-slot.pc-minor .pc-slot-lbl{font-size:10px}
+.pc-slot.pc-minor .pc-slot-show{font-size:12px}
+@media (max-width:760px){
+  .pc-slot.pc-main,.pc-slot.pc-main.none{min-height:72px}
+  /* Phones: matinee | evening side by side; each extra is a thin full-width strip
+     (morning above them, early evening and late below). */
+  .pc-slot.pc-minor,.pc-slot.pc-minor.none{grid-column:1/-1;min-height:0;font-size:12px}
+  .pc-slot.pc-minor[data-slot="early"],.pc-slot.pc-minor[data-slot="late"]{order:1}
+}
