@@ -25,6 +25,11 @@ const SP_AFFILIATE='https://seatplan.sjv.io/c/7761524/2219054/28679';
 const GO_SITE='https://musicaltripplanner.com';
 const isGoLink=u=>/^(https:\\/\\/musicaltripplanner\\.com)?\\/go\\?u=/.test(u||'');
 const goAbs=u=>/^\\/go\\?/.test(u||'')?GO_SITE+u:(u||'');
+// 2026-11-10: SeatPlan buttons open the chosen performance, not the show's overview (same rule as
+// seatPlanPerformanceUrl in lib/seatplan.js): …/schmigadoon-broadway-tickets/tickets/14-nov-2026/7-30pm/
+const SP_MONTHS=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+function spPerformance(url,date,time){const u=String(url||'');if(!/^https:\\/\\/seatplan\\.com\\/(london|new-york)\\/[^/?#]+-tickets\\/?$/i.test(u))return u;const d=/^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(String(date||'')),t=/^(\\d{1,2}):(\\d{2})/.exec(String(time||''));if(!d||!t)return u;const m=SP_MONTHS[Number(d[2])-1],h=Number(t[1]);if(!m||h>23)return u;return u.replace(/\\/?$/,'/')+'tickets/'+Number(d[3])+'-'+m+'-'+d[1]+'/'+(h%12||12)+'-'+t[2]+(h<12?'am':'pm')+'/'}
+function spIsoForLabel(label){try{return Object.keys(choices()).find(d=>fmt(d)===label)||''}catch(e){return ''}}
 function spTracked(url,name,src='planner'){if(!/^https:\\/\\/([a-z0-9-]+\\.)*seatplan\\.com\\//i.test(url||''))return url;const sub=src+'-'+String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60);const go='/go?u='+encodeURIComponent(url)+(sub!==src+'-'?'&subId1='+encodeURIComponent(sub):'');return src==='export'?GO_SITE+go:go}
 const tmLinks=new Map(),tmPending=new Set();
 function tmKey(c,d){return [state.city,c.name,d,c.time].join('|')}
@@ -45,7 +50,7 @@ mustReplace('function linkHtml(c){', helpers, 'linkHtml start');
 // button is dropped; it only remains for shows neither seller lists.
 mustReplace(
   'if(ticketUrl)h+=`<a class="ticket-link" target="_blank" rel="noopener" href="${esc(ticketUrl)}">Tickets on SeatPlan ↗</a>`;if(c.venueUrl||c.infoUrl)h+=`<a class="venue-link" target="_blank" rel="noopener" href="${esc(c.venueUrl||c.infoUrl)}">Theater / venue tickets ↗</a>`;return h}',
-  'if(ticketUrl)h+=`<a class="ticket-link" target="_blank" rel="noopener sponsored" href="${esc(spTracked(ticketUrl,c.name))}">Tickets on SeatPlan ↗</a>`;const tmHtml=tmLinkHtml(c,state.active);h+=tmHtml;const official=(!ticketUrl&&!tmHtml)?officialTicketFor(c):\'\';if(official)h+=`<a class="ticket-link official" target="_blank" rel="noopener" href="${esc(official)}">Tickets ↗</a>`;const venueUrl=c.venueUrl||c.infoUrl;if(venueUrl&&!ticketUrl&&!tmHtml&&!official)h+=`<a class="venue-link" target="_blank" rel="noopener" href="${esc(venueUrl)}">Theater / venue tickets ↗</a>`;return h}',
+  'if(ticketUrl)h+=`<a class="ticket-link" target="_blank" rel="noopener sponsored" href="${esc(spTracked(spPerformance(ticketUrl,state.active,c.time),c.name))}">Tickets on SeatPlan ↗</a>`;const tmHtml=tmLinkHtml(c,state.active);h+=tmHtml;const official=(!ticketUrl&&!tmHtml)?officialTicketFor(c):\'\';if(official)h+=`<a class="ticket-link official" target="_blank" rel="noopener" href="${esc(official)}">Tickets ↗</a>`;const venueUrl=c.venueUrl||c.infoUrl;if(venueUrl&&!ticketUrl&&!tmHtml&&!official)h+=`<a class="venue-link" target="_blank" rel="noopener" href="${esc(venueUrl)}">Theater / venue tickets ↗</a>`;return h}',
   'SeatPlan button + venue fallback'
 );
 // Ticketmaster blue so the two sellers are easy to tell apart. In the selected card the seller
@@ -69,7 +74,7 @@ mustReplace(
 // wrapper, both inlined), so the effective place is the wrapper's row mapping.
 mustReplace(
   "return {...row,bookingReference:choice?.bookingReference||'',seat:choice?.seat||'',ticketMatch:verification?verificationLabel(verification.status):''};",
-  "return {...row,ticket:spTracked(choice?(ticketLinkFor(choice)||officialTicketFor(choice)):row.ticket,row.musical,'export'),ticketmaster:(choice&&tmExport.get(tmExportKey(choice,row.date)))||'',bookingReference:choice?.bookingReference||'',seat:choice?.seat||'',ticketMatch:verification?verificationLabel(verification.status):''};",
+  "return {...row,ticket:spTracked(choice?(ticketLinkFor(choice)?spPerformance(ticketLinkFor(choice),spIsoForLabel(row.date),choice.time):officialTicketFor(choice)):row.ticket,row.musical,'export'),ticketmaster:(choice&&tmExport.get(tmExportKey(choice,row.date)))||'',bookingReference:choice?.bookingReference||'',seat:choice?.seat||'',ticketMatch:verification?verificationLabel(verification.status):''};",
   'export ticket link'
 );
 
