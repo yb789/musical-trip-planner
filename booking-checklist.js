@@ -28,7 +28,7 @@
   function sellers(c,d,src){
     const out=[];if(!c)return out;
     const sp=typeof ticketLinkFor==='function'?ticketLinkFor(c):'';
-    if(sp)out.push({id:'seatplan',name:'SeatPlan',cls:'',url:spTracked(sp,c.name,src),sponsored:true});
+    if(sp)out.push({id:'seatplan',name:'SeatPlan',cls:'',url:spTracked(typeof spPerformance==='function'?spPerformance(sp,d,c.time):sp,c.name,src),sponsored:true});
     if(typeof tmLinkHtml==='function')tmLinkHtml(c,d); // starts the Ticketmaster lookup if needed
     const tm=typeof tmLinks!=='undefined'?tmLinks.get(tmKey(c,d)):'';
     if(tm)out.push({id:'ticketmaster',name:'Ticketmaster',cls:'tm-link',url:tm.replace(/([?&]subId1=)planner-/,'$1'+src+'-'),sponsored:true});

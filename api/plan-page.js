@@ -1,5 +1,6 @@
 import { SITE, loadPlan, isValidCode, cityLabel, fmtDay, rangeLabel, planStats, planTitle } from "../lib/plans.js";
 import { guideEntryFor, goPath } from "../lib/site-pages.js";
+import { seatPlanPerformanceUrl } from "../lib/seatplan.js";
 
 const KIND_LABEL = { play: "Play", spectacular: "Spectacular", concert: "Concert", family: "Family show" };
 const CITY_SLUG = { london: "london", broadway: "new-york" };
@@ -73,7 +74,7 @@ export function renderPlan(code, plan) {
       const c = plan.choices[d][sess];
       if (!c) return "";
       const links = [
-        c.ticketUrl ? `<a href="${esc(goPath(c.ticketUrl, "shared-plan"))}" target="_blank" rel="noopener nofollow sponsored">Tickets ↗</a>` : "",
+        c.ticketUrl ? `<a href="${esc(goPath(seatPlanPerformanceUrl(c.ticketUrl, d, c.time), "shared-plan"))}" target="_blank" rel="noopener nofollow sponsored">Tickets ↗</a>` : "",
         (c.venueUrl || c.infoUrl) ? `<a href="${esc(c.venueUrl || c.infoUrl)}" target="_blank" rel="noopener">Theatre ↗</a>` : ""
       ].filter(Boolean).join("");
       const g = guideEntryFor(CITY_SLUG[plan.city] || "london", c.name);
