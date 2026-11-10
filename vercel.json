@@ -32,7 +32,8 @@
       "maxDuration": 60
     },
     "api/stats.js": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "data/**"
     }
   },
   "headers": [
@@ -216,6 +217,10 @@
     }
   ],
   "crons": [
+    {
+      "path": "/api/stats?report=links",
+      "schedule": "0 1 * * *"
+    },
     {
       "path": "/api/guide-check",
       "schedule": "0 5 * * 1"

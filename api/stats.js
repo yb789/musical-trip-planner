@@ -1,6 +1,7 @@
 import { stats } from "../lib/events.js";
 import { buildDailyReport, emailDailyReport, summaryLines } from "../lib/daily-report.js";
 import { buildSeoReport, emailSeoReport } from "../lib/seo-report.js";
+import { runLinkCheck } from "../lib/link-check.js";
 
 // GET /api/stats?days=30   Authorization: Bearer <CRON_SECRET>   -> usage totals as JSON
 // Same secret as the guide check, so nothing new to configure.
@@ -9,6 +10,9 @@ import { buildSeoReport, emailSeoReport } from "../lib/seo-report.js";
 //   On Mondays (UTC) the same cron run also sends the weekly SEO report (no extra cron slot needed).
 // GET /api/stats?report=seo    -> weekly SEO report (Search Console query x page, 28 days vs the 28
 //   before), stored in Neon gsc_weekly and emailed; &send=0 returns the JSON only. lib/seo-report.js
+// GET /api/stats?report=links  -> nightly ticket-link check (Vercel cron, before the daily report):
+//   opens the planner's SeatPlan date links and checks the Ticketmaster event links, stores the result
+//   in Neon link_checks (read by the daily email and by /go's fallback); &store=0 = dry run. lib/link-check.js
 export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
@@ -28,6 +32,16 @@ export default async function handler(req, res) {
     } catch (err) {
       console.error("seo report failed", err);
       return res.status(500).json({ error: "SEO report failed" });
+    }
+  }
+  if (req.query && req.query.report === "links") {
+    try {
+      const report = await runLinkCheck({ store: req.query.store !== "0" });
+      console.log("link check", JSON.stringify(report.counts), report.failures.length, "failed", report.errors.join("; "));
+      return res.status(200).json({ ok: true, report });
+    } catch (err) {
+      console.error("link check failed", err);
+      return res.status(500).json({ error: "Link check failed" });
     }
   }
   if (req.query && req.query.report === "daily") {
