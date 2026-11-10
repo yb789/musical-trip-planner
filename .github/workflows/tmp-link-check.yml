@@ -1,0 +1,15 @@
+name: tmp-link-check
+on:
+  push:
+    branches: [tmp-link-check-run]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci --silent
+      - run: node scripts/run-link-check.mjs
+        env: { LINK_CHECK_BUDGET_MS: "300000" }
