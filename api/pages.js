@@ -1,10 +1,10 @@
-import { CITIES, renderShow, renderCity, renderMatinees, renderGuide, renderGuidesIndex, renderAbout, renderPrivacy, renderTerms, notFound } from "../lib/site-pages.js";
+import { CITIES, renderShow, renderCity, renderMatinees, matineeWeekOptions, renderGuide, renderGuidesIndex, renderAbout, renderPrivacy, renderTerms, notFound } from "../lib/site-pages.js";
 import { loadSchedule } from "../lib/schedule-data.js";
 import { handleGo } from "../lib/go.js";
 
 // Indexable pages, reached through vercel.json rewrites:
 //   /london/  /new-york/            -> ?type=city&city=…
-//   /london/matinees/ /new-york/matinees/ -> ?type=matinees&city=…
+//   /london/matinees/ /new-york/matinees/ -> ?type=matinees&city=…  (&week=<Monday> for a later week)
 //   /london/:slug/  /new-york/:slug/ -> ?type=show&city=…&slug=…
 //   /guides/  /guides/:slug/         -> ?type=guide&slug=…
 //   /about/                          -> ?type=about
@@ -23,8 +23,19 @@ export default async function handler(req, res) {
     else if (type === "matinees" && CITIES[city]) {
       // Live planner schedule for the next 7 days. Cached for 12 hours at the edge and served stale
       // for up to a week while it refreshes, so visitors rarely wait for the scrape.
+      // ?week=YYYY-MM-DD shows a later week: only the next 8 Mondays are accepted, so the parameter
+      // can't be used to trigger unlimited scrapes. Anything else (an old shared link) goes to the main page.
+      const now = new Date();
+      const weeks = matineeWeekOptions(now);
+      const week = String(q.week || "");
+      if (week && !weeks.includes(week)) {
+        res.statusCode = 302;
+        res.setHeader("Location", `/${city}/matinees/`);
+        res.setHeader("Cache-Control", "public, max-age=60, s-maxage=600");
+        return res.end();
+      }
       try {
-        html = renderMatinees(city, await loadSchedule(city, new Date()));
+        html = renderMatinees(city, await loadSchedule(city, week ? new Date(week + "T12:00:00Z") : now), { week, weeks });
         cache = "public, max-age=600, s-maxage=43200, stale-while-revalidate=604800";
       } catch (err) {
         console.error("matinees page failed", city, err?.message || err);
