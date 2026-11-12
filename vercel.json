@@ -218,6 +218,10 @@
   ],
   "crons": [
     {
+      "path": "/api/stats?report=warm",
+      "schedule": "20 0 * * *"
+    },
+    {
       "path": "/api/stats?report=links",
       "schedule": "0 1 * * *"
     },

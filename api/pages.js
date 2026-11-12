@@ -1,5 +1,5 @@
 import { CITIES, renderShow, renderCity, renderMatinees, matineeWeekOptions, renderGuide, renderGuidesIndex, renderAbout, renderPrivacy, renderTerms, notFound } from "../lib/site-pages.js";
-import { loadSchedule } from "../lib/schedule-data.js";
+import { cachedSchedule } from "../lib/schedule-cache.js";
 import { handleGo } from "../lib/go.js";
 
 // Indexable pages, reached through vercel.json rewrites:
@@ -21,8 +21,8 @@ export default async function handler(req, res) {
     let cache = "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800";
     if (type === "city" && CITIES[city]) html = renderCity(city);
     else if (type === "matinees" && CITIES[city]) {
-      // Live planner schedule for the next 7 days. Cached for 12 hours at the edge and served stale
-      // for up to a week while it refreshes, so visitors rarely wait for the scrape.
+      // Planner schedule for 7 days, from the stored copy that the nightly job keeps fresh
+      // (lib/schedule-cache.js), or read live when there is none. Also cached for 12 hours at the edge.
       // ?week=YYYY-MM-DD shows a later week: only the next 8 Mondays are accepted, so the parameter
       // can't be used to trigger unlimited scrapes. Anything else (an old shared link) goes to the main page.
       const now = new Date();
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
         return res.end();
       }
       try {
-        html = renderMatinees(city, await loadSchedule(city, week ? new Date(week + "T12:00:00Z") : now), { week, weeks });
+        html = renderMatinees(city, await cachedSchedule(city, week ? new Date(week + "T12:00:00Z") : now), { week, weeks });
         cache = "public, max-age=600, s-maxage=43200, stale-while-revalidate=604800";
       } catch (err) {
         console.error("matinees page failed", city, err?.message || err);
