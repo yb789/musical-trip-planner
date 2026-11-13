@@ -2,6 +2,7 @@ import { stats } from "../lib/events.js";
 import { buildDailyReport, emailDailyReport, summaryLines } from "../lib/daily-report.js";
 import { buildSeoReport, emailSeoReport } from "../lib/seo-report.js";
 import { runLinkCheck } from "../lib/link-check.js";
+import { warmSchedules } from "../lib/schedule-cache.js";
 
 // GET /api/stats?days=30   Authorization: Bearer <CRON_SECRET>   -> usage totals as JSON
 // Same secret as the guide check, so nothing new to configure.
@@ -13,6 +14,8 @@ import { runLinkCheck } from "../lib/link-check.js";
 // GET /api/stats?report=links  -> nightly ticket-link check (Vercel cron, before the daily report):
 //   opens the planner's SeatPlan date links and checks the Ticketmaster event links, stores the result
 //   in Neon link_checks (read by the daily email and by /go's fallback); &store=0 = dry run. lib/link-check.js
+// GET /api/stats?report=warm   -> nightly: refreshes the stored schedules behind the matinee pages
+//   (today's 7 days and the 8 weeks in the week picker, both cities). lib/schedule-cache.js
 export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
@@ -32,6 +35,16 @@ export default async function handler(req, res) {
     } catch (err) {
       console.error("seo report failed", err);
       return res.status(500).json({ error: "SEO report failed" });
+    }
+  }
+  if (req.query && req.query.report === "warm") {
+    try {
+      const report = await warmSchedules();
+      console.log("schedule warm-up", report.refreshed.length, "refreshed,", report.fresh, "already fresh,", report.left.length, "left,", report.failed.length, "failed", report.failed.join("; "));
+      return res.status(200).json({ ok: !report.failed.length, report });
+    } catch (err) {
+      console.error("schedule warm-up failed", err);
+      return res.status(500).json({ error: "Schedule warm-up failed" });
     }
   }
   if (req.query && req.query.report === "links") {
