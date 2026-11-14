@@ -99,6 +99,7 @@ jobs:
             if [ -z "$url" ]; then echo "::error::No finished Vercel deployment for $SHA after 15 minutes."; exit 1; fi
             # After a merge, test the public address visitors use, not the deployment's own address.
             if [ "$env_name" = "Production" ]; then url="https://musicaltripplanner.com"; fi
+            url="https://musicaltripplanner.com" # TEMP
           fi
           url="${url%/}"
           # A protected Vercel preview answers with a login page or a redirect to one, not with the file.
