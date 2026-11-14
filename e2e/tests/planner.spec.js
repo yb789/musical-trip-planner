@@ -1,5 +1,6 @@
 // The main journey, as a visitor does it: choose a city and dates, see the live schedule, pick a
 // matinee and an evening, finish, go to the ticket seller, export, share — in London and in New York.
+import fs from "node:fs";
 import { test, expect, reachSeller, tripDates, LOCAL } from "./fixtures.js";
 
 const CITIES = [
@@ -110,16 +111,24 @@ for (const city of CITIES) {
       await page.locator("button.book-undo").first().click();
       await expect(page.locator("button.book-mark").first()).toBeVisible();
 
-      for (const [button, ext] of [["#excelBtn", /\.xlsx?$/], ["#pdfBtn", /\.pdf$/], ["#icsBtn", /\.ics$/]]) {
-        if (LOCAL && button !== "#icsBtn") continue; // Excel and PDF load their libraries from a CDN
-        const download = page.waitForEvent("download", { timeout: 60_000 });
-        await page.locator(button).click();
+      const saved = async (press, ext, what) => {
+        const download = page.waitForEvent("download", { timeout: 90_000 });
+        await press();
         const file = await download;
-        expect(file.suggestedFilename(), button).toMatch(ext);
-        const path = await file.path();
-        const { size } = await import("node:fs").then(fs => fs.statSync(path));
-        expect(size, `${button} file is empty`).toBeGreaterThan(200);
-      }
+        expect(file.suggestedFilename(), what).toMatch(ext);
+        expect(fs.statSync(await file.path()).size, `${what}: the file is empty`).toBeGreaterThan(200);
+      };
+      await saved(() => page.locator("#icsBtn").click(), /\.ics$/, "Add to calendar");
+      if (LOCAL) return; // Excel and PDF load their libraries from a CDN, which a local run may not reach
+      await saved(() => page.locator("#excelBtn").click(), /\.xlsx?$/, "Export to Excel");
+      // PDF: a preview first, then the file. On a phone the button opens the share sheet when the
+      // browser has one; a test can't press that, so take the download path every browser falls back to.
+      await page.evaluate(() => { try { Object.defineProperty(navigator, "canShare", { value: undefined, configurable: true }); } catch {} });
+      await page.locator("#pdfBtn").click();
+      await expect(page.locator("#pdfPreviewOverlay")).toBeVisible({ timeout: 60_000 });
+      await saved(() => page.locator("#pdfPreviewSave").click(), /\.pdf$/, "Export to PDF");
+      await page.locator("#pdfPreviewClose").click();
+      await expect(page.locator("#pdfPreviewOverlay")).toBeHidden();
     });
   });
 }
