@@ -26,8 +26,9 @@ from the site.
 
 Automatically (`.github/workflows/e2e.yml`):
 
-- every pull request — a local copy with a sample schedule, and the pull request's Vercel preview
-  with the live schedule;
+- every pull request — a local copy with a sample schedule. The pull request's Vercel preview
+  (live schedule) is tested too once the repository secret `VERCEL_AUTOMATION_BYPASS_SECRET` is
+  set; until then Vercel's protection keeps the tests out and that part is skipped with a warning;
 - every merge to `main` — the live site, after Vercel has deployed it.
 
 By hand: GitHub → Actions → "End-to-end tests" → Run workflow.
