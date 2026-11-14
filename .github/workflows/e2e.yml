@@ -99,15 +99,19 @@ jobs:
             if [ -z "$url" ]; then echo "::error::No finished Vercel deployment for $SHA after 15 minutes."; exit 1; fi
             # After a merge, test the public address visitors use, not the deployment's own address.
             if [ "$env_name" = "Production" ]; then url="https://musicaltripplanner.com"; fi
+            url="https://musicaltripplanner.com" # TEMP: one-off check of the live site from this pull request
           fi
           url="${url%/}"
-          code=$(curl -s -o /dev/null -w '%{http_code}' ${BYPASS:+-H "x-vercel-protection-bypass: $BYPASS"} "$url/robots.txt" || true)
-          echo "Address: $url (robots.txt answered $code)"
-          if [ "$code" = "401" ] || [ "$code" = "403" ]; then
-            echo "::warning::$url is protected by Vercel and can't be opened by the tests. Add the repository secret VERCEL_AUTOMATION_BYPASS_SECRET (see the top of .github/workflows/e2e.yml). Skipped."
+          # A protected Vercel preview answers with a login page or a redirect to one, not with the file.
+          if curl -sf --max-time 30 ${BYPASS:+-H "x-vercel-protection-bypass: $BYPASS"} "$url/robots.txt" | grep -q "Disallow: /go"; then
+            echo "Address: $url"
+            echo "run=yes" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT" = "pull_request" ]; then
+            echo "::warning::The preview $url can't be opened by the tests (Vercel protects preview deployments). Add the repository secret VERCEL_AUTOMATION_BYPASS_SECRET (see the top of .github/workflows/e2e.yml). Skipped; the local-copy tests still ran."
             echo "run=no" >> "$GITHUB_OUTPUT"
           else
-            echo "run=yes" >> "$GITHUB_OUTPUT"
+            echo "::error::$url/robots.txt did not answer as expected. Is the site down?"
+            exit 1
           fi
           echo "url=$url" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4

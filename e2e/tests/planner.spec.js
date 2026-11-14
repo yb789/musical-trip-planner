@@ -7,6 +7,7 @@ const CITIES = [
   { key: "broadway", startButton: "New York · Broadway", area: "Broadway", sellerPath: /seatplan\.com\/new-york\/|ticketmaster\.com/ },
 ];
 const SCHEDULE_WAIT = LOCAL ? 15_000 : 150_000;
+test.describe.configure({ timeout: LOCAL ? 60_000 : 360_000 });
 
 // Start screen -> planner with a 3-day trip and the schedule loaded.
 async function openPlanner(page, city) {

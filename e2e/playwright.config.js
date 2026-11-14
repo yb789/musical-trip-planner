@@ -18,12 +18,13 @@ if (process.env.E2E_SKIP_WEBKIT !== "1") projects.push({ name: "iphone-safari", 
 
 export default defineConfig({
   testDir: "./tests",
-  timeout: LOCAL ? 60_000 : 240_000, // the live schedule can take over a minute on a cold start
+  timeout: 60_000, // planner.spec.js allows itself more: the live schedule can take over a minute
   expect: { timeout: LOCAL ? 10_000 : 20_000 },
   fullyParallel: true,
   workers: LOCAL ? 4 : 3,
   retries: process.env.CI && !LOCAL ? 1 : 0,
   forbidOnly: !!process.env.CI,
+  maxFailures: process.env.CI ? 25 : 0, // a site that is down should not keep the run busy for an hour
   reporter: process.env.CI ? [["list"], ["github"], ["html", { open: "never" }]] : [["list"]],
   use: {
     baseURL,

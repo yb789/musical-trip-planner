@@ -1,6 +1,6 @@
 // /go — the ticket redirect. Every "buy tickets" link on the site passes through it, so if this
 // breaks, nobody reaches Ticketmaster or SeatPlan (as happened on 13–14 Nov 2026).
-import { test, expect, apiGet, apiPost, IMPACT, STUB_TEXT } from "./fixtures.js";
+import { test, expect, apiGet, apiPost, reachSeller, IMPACT, STUB_TEXT } from "./fixtures.js";
 
 const SELLERS = [
   { name: "Ticketmaster UK", page: "https://www.ticketmaster.co.uk/wicked-tickets/artist/1094215", impact: IMPACT["ticketmaster-uk"], label: "Ticketmaster" },
@@ -33,8 +33,9 @@ for (const seller of SELLERS) {
         document.body.appendChild(a);
       }, goUrl(seller.page));
       await page.click("#e2e-link");
-      await expect(page.getByText(STUB_TEXT).first()).toBeVisible();
-      expectImpact(page.url(), seller);
+      const { url, viaContinuePage } = await reachSeller(page);
+      expectImpact(url, seller);
+      expect(viaContinuePage, "a person's click was answered with the Continue page (an extra tap) instead of going straight to the seller").toBe(false);
     });
 
     test("a visit that is not a click gets the Continue page, and its button reaches the seller", async ({ page, baseURL }) => {
