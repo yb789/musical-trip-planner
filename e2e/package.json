@@ -1,0 +1,13 @@
+{
+  "name": "musical-trip-planner-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:local": "E2E_LOCAL=1 playwright test",
+    "serve": "node local-server.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

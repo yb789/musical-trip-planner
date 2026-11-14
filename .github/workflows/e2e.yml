@@ -1,0 +1,140 @@
+# End-to-end tests (e2e/README.md). They run by themselves:
+#   - on every pull request: against a local copy of the site with a sample schedule ("local copy"),
+#     and against the pull request's Vercel preview with the live schedule ("deployed site");
+#   - after every merge to main: against https://musicaltripplanner.com once Vercel has deployed it.
+# Run by hand: Actions -> "End-to-end tests" -> Run workflow (optionally with another address).
+#
+# A failed run is reported on the pull request / by GitHub's email. The run page keeps a report with
+# screenshots and a step-by-step trace of each failed test (Artifacts -> playwright-report-…).
+#
+# If Vercel protects preview deployments, add the repository secret VERCEL_AUTOMATION_BYPASS_SECRET
+# (Vercel -> project -> Settings -> Deployment Protection -> Protection Bypass for Automation).
+# Without it the preview run is skipped with a warning; the other runs are unaffected.
+name: End-to-end tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Address to test (default: https://musicaltripplanner.com)"
+        required: false
+
+concurrency:
+  group: e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  deployments: read
+
+jobs:
+  local:
+    name: local copy (sample schedule)
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the site's packages
+        run: npm ci
+      - name: Install the test tools
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium webkit
+      - name: Run the tests
+        working-directory: e2e
+        env:
+          E2E_LOCAL: "1"
+        run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-local
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 14
+
+  deployed:
+    name: deployed site (live schedule)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Find the address to test
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          INPUT_URL: ${{ inputs.url }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            url="${INPUT_URL:-https://musicaltripplanner.com}"
+          else
+            if [ "$EVENT" = "pull_request" ]; then env_name=Preview; else env_name=Production; fi
+            echo "Waiting for Vercel's $env_name deployment of $SHA"
+            url=""
+            for i in $(seq 1 90); do
+              id=$(gh api "repos/$GITHUB_REPOSITORY/deployments?sha=$SHA&environment=$env_name&per_page=1" --jq '.[0].id // empty')
+              if [ -n "$id" ]; then
+                state=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$id/statuses?per_page=1" --jq '.[0].state // empty')
+                if [ "$state" = "success" ]; then
+                  url=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$id/statuses?per_page=1" --jq '.[0].environment_url // empty')
+                  break
+                fi
+                if [ "$state" = "failure" ] || [ "$state" = "error" ]; then echo "::error::Vercel's deployment failed, so there is nothing to test."; exit 1; fi
+              fi
+              sleep 10
+            done
+            if [ -z "$url" ]; then echo "::error::No finished Vercel deployment for $SHA after 15 minutes."; exit 1; fi
+            # After a merge, test the public address visitors use, not the deployment's own address.
+            if [ "$env_name" = "Production" ]; then url="https://musicaltripplanner.com"; fi
+          fi
+          url="${url%/}"
+          # A protected Vercel preview answers with a login page or a redirect to one, not with the file.
+          if curl -sf --max-time 30 ${BYPASS:+-H "x-vercel-protection-bypass: $BYPASS"} "$url/robots.txt" | grep -q "Disallow: /go"; then
+            echo "Address: $url"
+            echo "run=yes" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT" = "pull_request" ]; then
+            echo "::warning::The preview $url can't be opened by the tests (Vercel protects preview deployments). Add the repository secret VERCEL_AUTOMATION_BYPASS_SECRET (see the top of .github/workflows/e2e.yml). Skipped; the local-copy tests still ran."
+            echo "run=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::$url/robots.txt did not answer as expected. Is the site down?"
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        if: steps.target.outputs.run == 'yes'
+        with:
+          node-version: 22
+      - name: Install the test tools
+        if: steps.target.outputs.run == 'yes'
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium webkit
+      - name: Run the tests
+        if: steps.target.outputs.run == 'yes'
+        working-directory: e2e
+        env:
+          E2E_BASE_URL: ${{ steps.target.outputs.url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure() && steps.target.outputs.run == 'yes'
+        with:
+          name: playwright-report-deployed
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 14
