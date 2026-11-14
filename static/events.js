@@ -5,6 +5,13 @@
 // Opt out on this browser: open any page with ?notrack=1 (undo with ?notrack=0). Used to keep the
 // owner's own visits out of the numbers; ticket links then carry nt=1 so /go doesn't count them either.
 (function(){
+  // A person's tap or click on a ticket link stamps the link with the time (ck=…), so /go can tell it
+  // from a crawler that merely follows the link and send the person straight to the seller. Chrome
+  // marks a person's click itself (Sec-Fetch-User); Safari doesn't, so without the stamp every Safari
+  // and iPhone visitor got the "Continue to <seller>" page first. Only real input counts (isTrusted).
+  var ck=function(e){if(!e.isTrusted)return;var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname===location.hostname&&u.pathname==='/go'){u.searchParams.set('ck',Date.now().toString(36));a.href=u.toString()}}catch(x){}};
+  ['pointerdown','mousedown','touchstart','click','auxclick'].forEach(function(t){document.addEventListener(t,ck,true)});
+  document.addEventListener('keydown',function(e){if(e.key==='Enter')ck(e)},true);
   var off=false;try{var q=location.search.match(/[?&]notrack=([01])\b/);if(q){if(q[1]==='1')localStorage.setItem('mtpNoTrack','1');else localStorage.removeItem('mtpNoTrack')}off=localStorage.getItem('mtpNoTrack')==='1'}catch(e){}
   if(off){window.mtpTrack=function(){};
     // Ticket clicks are counted on the server by /go, so tell it not to count this browser's clicks.

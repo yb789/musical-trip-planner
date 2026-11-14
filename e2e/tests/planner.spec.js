@@ -52,7 +52,7 @@ async function chooseShow(page, slotLabel, avoid = []) {
 
 for (const city of CITIES) {
   test.describe(`${city.area} trip`, () => {
-    test("plan a matinee and an evening, finish, and reach the ticket seller", async ({ page, context }, testInfo) => {
+    test("plan a matinee and an evening, finish, and reach the ticket seller", async ({ page, context }) => {
       await openPlanner(page, city);
 
       const matinee = await chooseShow(page, "Matinee");
@@ -82,6 +82,9 @@ for (const city of CITIES) {
       // Ticket button -> "Buy tickets" dialog -> link through /go -> the seller.
       await sellers.first().click();
       await expect(page.locator("#leaveTitle")).toBeVisible();
+      // The box names what was chosen and reminds the buyer to check it on the seller's page.
+      await expect(page.locator("#leaveShow")).toContainText(/\d{1,2}:\d{2}/);
+      await expect(page.locator("#leaveCheck")).toContainText("check that the ticket site shows this show, date and time");
       const link = page.locator("a.ticket-link").filter({ hasText: /^Continue to / }).first();
       const go = new URL(await link.getAttribute("href"), page.url());
       expect(go.pathname).toBe("/go");
@@ -92,8 +95,7 @@ for (const city of CITIES) {
       await link.click();
       const dest = (await popup) || page;
       const { viaContinuePage } = await reachSeller(dest);
-      // Not a failure, but worth seeing in the report: a real visitor in this browser needs an extra tap.
-      testInfo.annotations.push({ type: "ticket click", description: viaContinuePage ? "went through the Continue page (one extra tap)" : "went straight to the seller" });
+      expect(viaContinuePage, "the ticket link was answered with the Continue page (an extra tap) instead of going straight to the seller").toBe(false);
       if (dest !== page) await dest.close();
     });
 

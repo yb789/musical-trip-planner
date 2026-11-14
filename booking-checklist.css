@@ -37,6 +37,7 @@
 .leave-modal{max-width:460px}
 .leave-modal h2{font-size:26px}
 .leave-show{margin:6px 0 14px;line-height:1.45}
+.leave-check{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#fff7e0;border:1px solid #ecd9a0;font-size:14px;line-height:1.4}
 .leave-sellers{display:grid;gap:8px}
 .leave-sellers .ticket-link{display:flex;align-items:center;justify-content:center;min-height:52px;margin:0;font-size:15px;border-radius:12px}
 .leave-sellers .ticket-link.venue-link{background:#5b5248}

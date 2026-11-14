@@ -57,7 +57,7 @@
   function ensureLeaveOverlay(){
     let o=document.getElementById('leaveOverlay');if(o)return o;
     o=document.createElement('div');o.id='leaveOverlay';o.className='overlay hidden';
-    o.innerHTML='<div class="modal leave-modal" role="dialog" aria-modal="true" aria-labelledby="leaveTitle"><h2 id="leaveTitle">Buy tickets</h2><div id="leaveShow" class="leave-show"></div><div id="leaveSellers" class="leave-sellers"></div><p class="small leave-note">The ticket site opens in a <b>new tab</b>; this tab with your plan stays open behind it. When you have booked, switch back to this tab and press <b>Mark as booked</b>. If you lose it, just open <b>musicaltripplanner.com</b> again: your plan reopens where you left it.</p><div class="actions"><button type="button" id="leaveStay">Stay and keep planning</button></div></div>';
+    o.innerHTML='<div class="modal leave-modal" role="dialog" aria-modal="true" aria-labelledby="leaveTitle"><h2 id="leaveTitle">Buy tickets</h2><div id="leaveShow" class="leave-show"></div><p id="leaveCheck" class="leave-check"><b>Before you pay</b>, check that the ticket site shows this show, date and time.</p><div id="leaveSellers" class="leave-sellers"></div><p class="small leave-note">The ticket site opens in a <b>new tab</b>; this tab with your plan stays open behind it. When you have booked, switch back to this tab and press <b>Mark as booked</b>. If you lose it, just open <b>musicaltripplanner.com</b> again: your plan reopens where you left it.</p><div class="actions"><button type="button" id="leaveStay">Stay and keep planning</button></div></div>';
     document.body.appendChild(o);
     o.addEventListener('click',e=>{if(e.target===o)closeLeave()});
     o.querySelector('#leaveStay').onclick=closeLeave;
