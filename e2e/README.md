@@ -8,7 +8,7 @@ size, and Safari's engine at iPhone size), and fail if anything on the way break
 | File | What it checks |
 |---|---|
 | `tests/planner.spec.js` | London and New York: choose city and dates, live schedule loads, pick a matinee and an evening, reload keeps the plan, day-by-day view, finish, ticket button → Buy tickets → `/go` → seller, mark as booked, Excel / PDF / calendar exports, share link opens for someone else |
-| `tests/go.spec.js` | The ticket redirect for Ticketmaster UK, Ticketmaster US and SeatPlan (London, New York): a person's click goes straight to the right Impact link; a visit that is not a click gets the Continue page and its button works; crawlers never get the seller's address; other sites are refused |
+| `tests/go.spec.js` | The ticket redirect for Ticketmaster UK, Ticketmaster US and SeatPlan (London, New York): a person's click goes straight to the right Impact link (Chrome and Safari); a visit that is not a click gets the Continue page and its button works; crawlers never get the seller's address; other sites are refused |
 | `tests/pages.spec.js` | About, terms, privacy, guides, city pages, show pages (times and ticket links), matinees pages and week picker, 404s, robots.txt, sitemap (and a sample of its pages), manifest, Android link file, service worker, icons, security headers, certificate |
 | `tests/helper.spec.js` | "Help me choose": four questions, shortlist, on to the planner |
 

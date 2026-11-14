@@ -4,7 +4,7 @@ import fs from 'node:fs';
 // share_created when a share link has been made. Safe to run twice.
 const file = 'index.html';
 let s = fs.readFileSync(file, 'utf8');
-const tag = '<script defer src="/events.js"></script>';
+const tag = '<script defer src="/events.js?v=2"></script>';
 const anchor = '<script defer src="/_vercel/insights/script.js"></script>';
 if (!s.includes(tag)) {
   if (!s.includes(anchor)) { console.error('patch-events: insights script tag not found'); process.exit(1); }

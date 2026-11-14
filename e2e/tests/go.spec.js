@@ -23,11 +23,9 @@ function expectImpact(finalUrl, seller) {
 
 for (const seller of SELLERS) {
   test.describe(seller.name, () => {
-    test("a person's click on a ticket link goes straight to the seller", async ({ page, browserName }) => {
-      // Known gap, found by this test on 14 Nov 2026: Safari does not send the header /go uses to
-      // recognise a person's click, so every Safari and iPhone visitor gets the Continue page (one
-      // extra tap; the button itself is covered by the next test). Remove this line with the fix.
-      test.fixme(browserName === "webkit", "Safari clicks are answered with the Continue page");
+    // Chrome marks a person's click itself; Safari doesn't, so there the site's script stamps the link
+    // (ck=…) at the moment of the tap. Either way a person must not get the Continue page.
+    test("a person's click on a ticket link goes straight to the seller", async ({ page }) => {
       await page.goto("/about/");
       // A real link on a real page of the site, clicked like a visitor would.
       await page.evaluate(href => {
@@ -52,6 +50,8 @@ for (const seller of SELLERS) {
       await page.goto(`data:text/html,<meta http-equiv="refresh" content="0;url=${encodeURIComponent(target)}">`);
       await page.waitForURL(url => url.pathname === "/go");
       await expect(page).toHaveTitle(`Continue to ${seller.label}`);
+      await expect(page.getByText(`Tickets are sold on ${seller.label}'s own site`)).toBeVisible();
+      await expect(page.getByText("check that it shows the right show, date and time")).toBeVisible();
       const button = page.getByRole("button", { name: `Continue to ${seller.label}` });
       await expect(button).toBeVisible();
       await button.click();
@@ -77,6 +77,27 @@ for (const seller of SELLERS) {
     });
   });
 }
+
+test("only a fresh stamp from a real browser counts as a person's click", async ({ request }) => {
+  const page = SELLERS[3].page;
+  const stamp = ms => `${goUrl(page)}&ck=${(Date.now() + ms).toString(36)}`;
+  const get = (url, ua) => apiGet(request, url, { maxRedirects: 0, headers: { "user-agent": ua } });
+  // A fresh stamp: straight on (this is what Safari sends after a tap).
+  const fresh = await get(stamp(0), BROWSER_UA);
+  expect(fresh.status()).toBe(303);
+  expect(fresh.headers()["location"]).toMatch(IMPACT.seatplan);
+  expect(fresh.headers()["location"]).not.toContain("ck=");
+  // An old stamp (a copied link), one from the future, a made-up one, or a crawler with a fresh one: Continue page.
+  for (const [what, res] of [
+    ["old stamp", await get(stamp(-45 * 60 * 1000), BROWSER_UA)],
+    ["stamp from the future", await get(stamp(20 * 60 * 1000), BROWSER_UA)],
+    ["made-up stamp", await get(`${goUrl(page)}&ck=1`, BROWSER_UA)],
+    ["crawler with a fresh stamp", await get(stamp(0), "Mozilla/5.0 (compatible; ExampleBot/1.0)")],
+  ]) {
+    expect(res.status(), what).toBe(200);
+    expect(await res.text(), what).not.toMatch(/evyy\.net|sjv\.io/);
+  }
+});
 
 test("links to other sites are refused", async ({ request }) => {
   for (const bad of ["https://example.com/", "http://www.ticketmaster.co.uk/x", "https://www.ticketmaster.co.uk.example.com/x", "https://seatplan.com.evil.example/", "javascript:alert(1)", ""]) {

@@ -89,7 +89,8 @@ for (const city of CITIES) {
       await found.link.click();
       const dest = (await found.link.getAttribute("target")) === "_blank" ? await popup : page;
       expect(dest, "the ticket link opened nothing").not.toBeNull();
-      await reachSeller(dest);
+      const { viaContinuePage } = await reachSeller(dest);
+      expect(viaContinuePage, "the ticket link was answered with the Continue page instead of going straight to the seller").toBe(false);
     });
 
     test("matinees page shows this week and can switch week", async ({ page }) => {
