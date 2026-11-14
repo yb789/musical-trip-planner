@@ -11,6 +11,12 @@ The repository deliberately carries no handoff document. The up-to-date project 
 
 The two `AI_HANDOFF*.md` files that used to sit here were snapshots from September 2026 and had drifted from the code; they were removed on 16 Oct 2026. Use `git log` and the pull-request descriptions for the history of each change.
 
+## Tests
+
+End-to-end tests live in `e2e/` and run on every pull request and after every merge
+(`.github/workflows/e2e.yml`). See `e2e/README.md`. Rules for Claude sessions, including "every
+change is tested end to end", are in `CLAUDE.md`.
+
 ## Layout
 
 | Path | What it is |
