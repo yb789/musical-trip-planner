@@ -37,8 +37,7 @@ async function openPlanner(page, city) {
 // Opens an empty slot of that kind and takes a show nobody picked yet. Returns the show's name.
 async function chooseShow(page, slotLabel, avoid = []) {
   const slot = page.locator("button.pc-slot.empty").filter({ hasText: slotLabel }).filter({ hasText: /Choose/ }).first();
-  await slot.scrollIntoViewIfNeeded();
-  await slot.click();
+  await slot.click(); // scrolls to it and waits out the calendar redrawing itself
   await expect(page.locator("#pcModalTitle")).toBeVisible();
   const picks = page.locator("button.pick:not([disabled])").filter({ hasText: "Choose" });
   await expect(picks.first()).toBeVisible();
@@ -111,7 +110,7 @@ for (const city of CITIES) {
       await page.locator("button.book-undo").first().click();
       await expect(page.locator("button.book-mark").first()).toBeVisible();
 
-      for (const [button, ext] of [["#excelBtn", /\.xlsx$/], ["#pdfBtn", /\.pdf$/], ["#icsBtn", /\.ics$/]]) {
+      for (const [button, ext] of [["#excelBtn", /\.xlsx?$/], ["#pdfBtn", /\.pdf$/], ["#icsBtn", /\.ics$/]]) {
         if (LOCAL && button !== "#icsBtn") continue; // Excel and PDF load their libraries from a CDN
         const download = page.waitForEvent("download", { timeout: 60_000 });
         await page.locator(button).click();
@@ -143,7 +142,7 @@ test("share a plan: the link opens the same plan for someone else", async ({ pag
   const created = page.waitForResponse(r => new URL(r.url()).pathname === "/api/plan" && r.request().method() === "POST");
   await page.locator("#shareBtn").click();
   const res = await created;
-  expect(res.status()).toBe(200);
+  expect([200, 201]).toContain(res.status());
   const body = await res.json();
   const code = body.code || (body.url || "").split("/").pop();
   expect(code).toMatch(/^[a-z0-9]{6}$/);

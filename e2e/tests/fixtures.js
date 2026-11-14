@@ -54,6 +54,7 @@ export const test = base.extend({
     });
     await new Promise(ok => stub.listen(0, "127.0.0.1", ok));
     const proxy = http.createServer((req, res) => { res.statusCode = 502; res.end("The test proxy only carries https."); });
+    const sockets = new Set(); // tunnels stay open after the tests; close them ourselves at the end
     proxy.on("connect", (req, client, head) => {
       const [host, port] = req.url.split(":");
       const upstream = SELLER_HOST.test(host) ? net.connect(stub.address().port, "127.0.0.1") : net.connect(Number(port) || 443, host);
@@ -62,11 +63,13 @@ export const test = base.extend({
         if (head?.length) upstream.write(head);
         upstream.pipe(client); client.pipe(upstream);
       });
-      const close = () => { upstream.destroy(); client.destroy(); };
-      upstream.on("error", close); client.on("error", close);
+      const close = () => { upstream.destroy(); client.destroy(); sockets.delete(upstream); sockets.delete(client); };
+      sockets.add(upstream); sockets.add(client);
+      for (const s of [upstream, client]) { s.on("error", close); s.on("close", close); }
     });
     await new Promise(ok => proxy.listen(0, "127.0.0.1", ok));
     await use({ proxy: `http://127.0.0.1:${proxy.address().port}` });
+    for (const s of sockets) s.destroy();
     proxy.closeAllConnections?.(); stub.closeAllConnections?.();
     await Promise.all([new Promise(ok => proxy.close(ok)), new Promise(ok => stub.close(ok))]);
     fs.rmSync(dir, { recursive: true, force: true });
