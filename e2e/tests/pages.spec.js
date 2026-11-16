@@ -108,6 +108,25 @@ for (const city of CITIES) {
   });
 }
 
+// Harry Potter and the Cursed Child in London is two plays with their own running times: the page
+// must answer "how long" and "what time does it finish" part by part, never with Part One's length
+// for both. The running times come from the show data; the start times from the live listings.
+test.describe("two-part play page", () => {
+  test("Cursed Child (London) answers part by part", async ({ page }) => {
+    const res = await page.goto("/london/harry-potter-and-the-cursed-child/");
+    expect(res.status()).toBe(200);
+    const faq = page.locator(".faq");
+    await expect(faq).toContainText(/Part One runs about .+ and Part Two about .+ in total/);
+    await expect(page.locator("p.glance")).toContainText(/Part One .+ Part Two/);
+    if (LOCAL || !(await page.getByText("Usual start and finish times").count())) return;   // no live times
+    await expect(page).toHaveTitle(/Part One & Two Start and Finish Times/);
+    await expect(page.locator(".card table").first()).toContainText("Part Two");
+    await expect(faq).toContainText(/What time does Harry Potter and the Cursed Child finish\?.*Part Two at/s);
+    // The one-show answers (a matinee "and another show the same day") don't apply to a two-part play.
+    await expect(faq).not.toContainText("another show on the same day");
+  });
+});
+
 test.describe("files other services rely on", () => {
   test("robots.txt, sitemap, llms.txt", async ({ request }) => {
     const robots = await (await apiGet(request, "/robots.txt")).text();
