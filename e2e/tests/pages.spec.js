@@ -108,22 +108,22 @@ for (const city of CITIES) {
   });
 }
 
-// Harry Potter and the Cursed Child in London is two plays with their own running times: the page
-// must answer "how long" and "what time does it finish" part by part, never with Part One's length
-// for both. The running times come from the show data; the start times from the live listings.
-test.describe("two-part play page", () => {
-  test("Cursed Child (London) answers part by part", async ({ page }) => {
+// Since 9 October 2026 Harry Potter and the Cursed Child in London is one show of about 2h 55m
+// (Tue–Sun, matinees Wed, Sat and Sun), no longer Part One and Part Two. The London page must not
+// describe it as two parts or give Part One / Part Two times. Running time comes from the show data.
+test.describe("Cursed Child (London) is one show", () => {
+  test("its page gives one running time and no parts", async ({ page }) => {
     const res = await page.goto("/london/harry-potter-and-the-cursed-child/");
     expect(res.status()).toBe(200);
-    const faq = page.locator(".faq");
-    await expect(faq).toContainText(/Part One runs about .+ and Part Two about .+ in total/);
-    await expect(page.locator("p.glance")).toContainText(/Part One .+ Part Two/);
-    if (LOCAL || !(await page.getByText("Usual start and finish times").count())) return;   // no live times
-    await expect(page).toHaveTitle(/Part One & Two Start and Finish Times/);
-    await expect(page.locator(".card table").first()).toContainText("Part Two");
-    await expect(faq).toContainText(/What time does Harry Potter and the Cursed Child finish\?.*Part Two at/s);
-    // The one-show answers (a matinee "and another show the same day") don't apply to a two-part play.
-    await expect(faq).not.toContainText("another show on the same day");
+    const main = page.locator("main");
+    await expect(page.locator(".faq")).toContainText("The running time of Harry Potter and the Cursed Child is about 2 hours 55 minutes");
+    await expect(main).not.toContainText("Two-part play");
+    await expect(main).not.toContainText("Part Two");
+  });
+
+  test("the London city page doesn't call it two parts", async ({ page }) => {
+    await page.goto("/london/");
+    await expect(page.locator("main")).not.toContainText("Cursed Child is two parts");
   });
 });
 
