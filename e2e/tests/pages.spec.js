@@ -127,6 +127,84 @@ test.describe("Cursed Child (London) is one show", () => {
   });
 });
 
+// Show facts audit, 17 November 2026: every running show was re-checked against the Society of
+// London Theatre / Broadway League listings and, where they disagreed, the theatre's or show's own
+// page. These are the facts that were wrong on the site. The first two tests read the data files
+// (they need no server); the last one reads the pages the facts end up on.
+test.describe("show facts (audit of 17 Nov 2026)", () => {
+  const readGuide = async city => JSON.parse(await (await import("node:fs/promises")).readFile(new URL(`../../data/shows-${city}.json`, import.meta.url), "utf8")).shows;
+  const FIXED = {
+    london: [
+      ["the-lion-king", { bookingUntil: "2027-07-25" }],
+      ["the-book-of-mormon", { bookingUntil: "2027-03-20" }],
+      ["moulin-rouge-the-musical", { bookingUntil: "2027-07-03", runtime: "2h 45m, 1 interval" }],
+      ["operation-mincemeat", { bookingUntil: "2027-05-29", runtime: "2h 35m, 1 interval" }],
+      ["rent", { bookingUntil: "2027-05-29" }],
+      ["come-alive", { bookingUntil: "2027-08-29" }],
+      ["high-school-musical", { runtime: "2h 20m, 1 interval" }],
+      ["stranger-things-the-first-shadow", { bookingUntil: "2026-12-23" }],
+      ["the-hunger-games-on-stage", { bookingUntil: "2027-02-14", runtime: "2h 30m, 1 interval" }],
+      ["the-mousetrap", { bookingUntil: "2027-07-17", runtime: "2h 05m, 1 interval" }],
+      ["the-play-that-goes-wrong", { bookingUntil: "2028-01-30" }],
+      ["witness-for-the-prosecution", { bookingUntil: "2027-09-19" }],
+      ["oh-mary", { bookingUntil: "2027-06-05" }],
+      ["one-day", { status: "running" }],
+      ["pride", { status: "running" }],
+      ["kimberly-akimbo", { bookingUntil: "2026-11-14" }],
+      ["harry-potter-and-the-cursed-child", { runtime: "2h 55m, 1 interval" }],
+    ],
+    broadway: [
+      ["harry-potter-and-the-cursed-child", { runtime: "2h 55m, 1 intermission" }],
+      ["just-in-time", { runtime: "2h 30m, 1 intermission" }],
+      ["buena-vista-social-club", { bookingUntil: "2027-01-17" }],
+      ["the-rocky-horror-show", { bookingUntil: "2027-02-28" }],
+      ["schmigadoon", { bookingUntil: "2027-04-04" }],
+      ["paranormal-activity", { bookingUntil: "2027-02-28", runtime: "2h 10m, 1 intermission" }],
+      ["a-few-good-men", { bookingUntil: "2027-01-10", runtime: "2h 35m, 1 intermission" }],
+      ["the-fantasticks", { bookingUntil: "2027-02-07", runtime: "2h 05m, 1 intermission" }],
+      ["stranger-things-the-first-shadow", { runtime: "2h 45m, 1 intermission" }],
+      ["galileo", { status: "running" }],
+    ],
+  };
+
+  for (const city of ["london", "broadway"]) {
+    test(`${city}: the corrected running times, dates and statuses are in the guide data`, async () => {
+      const byId = new Map((await readGuide(city)).map(s => [s.id, s]));
+      for (const [id, facts] of FIXED[city]) {
+        expect(byId.has(id), `${city}/${id} is in the guide`).toBe(true);
+        for (const [field, value] of Object.entries(facts)) expect(byId.get(id)[field], `${city}/${id} ${field}`).toBe(value);
+      }
+    });
+
+    // A date written out in "dates" ("Booking until 25 Jul 2027") and the machine date in
+    // "bookingUntil" must be the same day: the page text uses one, hiding ended shows uses the other.
+    test(`${city}: the written date and bookingUntil agree for every show`, async () => {
+      const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      for (const s of await readGuide(city)) {
+        const all = [...String(s.dates || "").matchAll(/(\d{1,2}) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* (\d{4})/g)];
+        if (!all.length || !s.bookingUntil) continue;
+        const [, d, m, y] = all[all.length - 1];
+        const iso = `${y}-${String(MONTHS.indexOf(m) + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        expect(s.bookingUntil, `${city}/${s.id}: "${s.dates}"`).toBe(iso);
+      }
+    });
+  }
+
+  test("show pages give the corrected running times", async ({ page }) => {
+    test.skip(LOCAL, "show pages read Ticketmaster live");
+    for (const [path, title, text] of [
+      ["/new-york/harry-potter-and-the-cursed-child/", "Harry Potter and the Cursed Child", "about 2 hours 55 minutes"],
+      ["/new-york/just-in-time/", "Just in Time", "about 2 hours 30 minutes"],
+      ["/london/the-mousetrap/", "The Mousetrap", "about 2 hours 5 minutes"],
+      ["/london/operation-mincemeat/", "Operation Mincemeat", "about 2 hours 35 minutes"],
+    ]) {
+      const res = await page.goto(path);
+      expect(res.status(), path).toBe(200);
+      await expect(page.locator(".faq"), path).toContainText(`The running time of ${title} is ${text}`);
+    }
+  });
+});
+
 test.describe("files other services rely on", () => {
   test("robots.txt, sitemap, llms.txt", async ({ request }) => {
     const robots = await (await apiGet(request, "/robots.txt")).text();
