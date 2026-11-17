@@ -108,6 +108,25 @@ for (const city of CITIES) {
   });
 }
 
+// Since 9 October 2026 Harry Potter and the Cursed Child in London is one show of about 2h 55m
+// (Tue–Sun, matinees Wed, Sat and Sun), no longer Part One and Part Two. The London page must not
+// describe it as two parts or give Part One / Part Two times. Running time comes from the show data.
+test.describe("Cursed Child (London) is one show", () => {
+  test("its page gives one running time and no parts", async ({ page }) => {
+    const res = await page.goto("/london/harry-potter-and-the-cursed-child/");
+    expect(res.status()).toBe(200);
+    const main = page.locator("main");
+    await expect(page.locator(".faq")).toContainText("The running time of Harry Potter and the Cursed Child is about 2 hours 55 minutes");
+    await expect(main).not.toContainText("Two-part play");
+    await expect(main).not.toContainText("Part Two");
+  });
+
+  test("the London city page doesn't call it two parts", async ({ page }) => {
+    await page.goto("/london/");
+    await expect(page.locator("main")).not.toContainText("Cursed Child is two parts");
+  });
+});
+
 test.describe("files other services rely on", () => {
   test("robots.txt, sitemap, llms.txt", async ({ request }) => {
     const robots = await (await apiGet(request, "/robots.txt")).text();
