@@ -205,6 +205,46 @@ test.describe("show facts (audit of 17 Nov 2026)", () => {
   });
 });
 
+// Six Broadway shows that were playing but missing from the guide (added 20 Nov 2026, facts from
+// their Playbill production pages and Broadway.com). Each must be in the data with the checked facts,
+// have its own page, and be listed in the sitemap.
+test.describe("Broadway shows added 20 Nov 2026", () => {
+  const ADDED = [
+    ["inter-alia", "Inter Alia", { venue: "Music Box Theatre", kind: "play", runtime: "1h 45m, no intermission", bookingUntil: "2027-02-21" }],
+    ["now-you-see-me-live", "Now You See Me Live", { venue: "Al Hirschfeld Theatre", kind: "spectacular", runtime: "1h 30m, no intermission", bookingUntil: "2027-01-03" }],
+    ["much-ado-about-nothing", "Much Ado About Nothing", { venue: "Winter Garden Theatre", kind: "play", runtime: "2h 20m, 1 intermission", bookingUntil: "2027-01-10" }],
+    ["downstate", "Downstate", { venue: "Booth Theatre", kind: "play", runtime: "2h 25m, 1 intermission", bookingUntil: "2027-02-14" }],
+    ["other-desert-cities", "Other Desert Cities", { venue: "Hudson Theatre", kind: "play", runtime: "2h 15m, 1 intermission", bookingUntil: "2027-01-17" }],
+    ["here-there-are-blueberries", "Here There Are Blueberries", { venue: "Ethel Barrymore Theatre", kind: "play", runtime: "1h 30m, no intermission", bookingUntil: "2027-01-10" }],
+  ];
+  const readGuide = async () => JSON.parse(await (await import("node:fs/promises")).readFile(new URL("../../data/shows-broadway.json", import.meta.url), "utf8")).shows;
+
+  test("they are in the Broadway guide with the checked facts", async () => {
+    const byId = new Map((await readGuide()).map(s => [s.id, s]));
+    for (const [id, title, facts] of ADDED) {
+      expect(byId.has(id), `${id} is in the guide`).toBe(true);
+      expect(byId.get(id).title).toBe(title);
+      for (const [field, value] of Object.entries(facts)) expect(byId.get(id)[field], `${id} ${field}`).toBe(value);
+    }
+  });
+
+  test("each has its own page and is in the sitemap", async ({ page, request }) => {
+    const locs = await (await request.get("/sitemap.xml")).text();
+    for (const [id, title] of ADDED) {
+      expect(locs, `sitemap lists ${id}`).toContain(`https://musicaltripplanner.com/new-york/${id}/`);
+      const res = await page.goto(`/new-york/${id}/`);
+      expect(res.status(), id).toBe(200);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
+    }
+  });
+
+  test("the Cursed Child (New York) description matches its 2h 55m running time", async () => {
+    const cc = (await readGuide()).find(s => s.id === "harry-potter-and-the-cursed-child");
+    expect(cc.runtime).toBe("2h 55m, 1 intermission");
+    expect(cc.blurb).not.toContain("three and a half hours");
+  });
+});
+
 test.describe("files other services rely on", () => {
   test("robots.txt, sitemap, llms.txt", async ({ request }) => {
     const robots = await (await apiGet(request, "/robots.txt")).text();
