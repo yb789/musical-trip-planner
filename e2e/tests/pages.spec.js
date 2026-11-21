@@ -262,6 +262,8 @@ test.describe("show page ticket button", () => {
       await expect(button).toHaveCount(1);
       await expect(button).toHaveAttribute("href", "#dates");
       await expect(button).toHaveText(/^Tickets( from [£$]\d+(\.\d\d)?)?: choose a date ↓$/);
+      // A price on the button must also be shown next to at least one time in the table.
+      if (/from/.test(await button.textContent())) await expect(page.locator("#dates")).toContainText(/from [£$]\d/);
       await button.click();
       await expect(page).toHaveURL(/#dates$/);
       await expect(goLinks.first()).toBeInViewport();

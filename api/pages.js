@@ -1,5 +1,5 @@
 import { CITIES, renderShow, renderCity, renderMatinees, matineeWeekOptions, renderGuide, renderGuidesIndex, renderAbout, renderPrivacy, renderTerms, notFound } from "../lib/site-pages.js";
-import { cachedSchedule } from "../lib/schedule-cache.js";
+import { cachedSchedule, storedSchedule } from "../lib/schedule-cache.js";
 import { handleGo } from "../lib/go.js";
 
 // Indexable pages, reached through vercel.json rewrites:
@@ -47,7 +47,9 @@ export default async function handler(req, res) {
     else if (type === "show" && CITIES[city] && /^[a-z0-9-]{1,80}$/.test(slug)) {
       const meta = {};
       const check = q.check === "1";
-      html = await renderShow(city, slug, { meta, check });
+      // Starting prices come from the planner's stored schedule (London Box Office / Broadway.com).
+      const schedule = await storedSchedule(city, new Date());
+      html = await renderShow(city, slug, { meta, check, schedule });
       // Cache pages with live times for 6 hours; retry sooner if Ticketmaster was unavailable.
       // ?check=1 shows Ticketmaster diagnostics and is never cached or indexed.
       cache = check ? "no-store" : meta.tmOk ? "public, max-age=300, s-maxage=21600, stale-while-revalidate=86400" : "public, max-age=60, s-maxage=600";
