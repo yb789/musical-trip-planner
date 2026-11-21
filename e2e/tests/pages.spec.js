@@ -259,6 +259,10 @@ test.describe("show page ticket button", () => {
     for (const path of ["/london/wicked/", "/new-york/wicked/", "/london/the-phantom-of-the-opera/", "/new-york/hamilton/"]) {
       const res = await page.goto(path);
       expect(res.status(), path).toBe(200);
+      // Never wider than the screen: on 21 Nov a "from £… · ends ~…" line that couldn't wrap made
+      // the dates table wider than a phone, so Chrome zoomed the page out and taps landed one row off.
+      const widths = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
+      expect(widths[0], `${path} is wider than the screen`).toBeLessThanOrEqual(widths[1]);
       const button = page.locator("a.btn.tix");
       const goLinks = page.locator('#dates a[href^="/go?"]');
       if (!(await goLinks.count())) {
