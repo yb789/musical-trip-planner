@@ -271,7 +271,7 @@ test.describe("show page ticket button", () => {
       }
       await expect(button).toHaveCount(1);
       await expect(button).toHaveAttribute("href", "#dates");
-      await expect(button).toHaveText(/^Tickets( from [£$]\d+(\.\d\d)?)?: choose a\sdate\s↓$/);
+      await expect(button).toHaveText(/^Tickets( from [£$]\d+(\.\d\d)?( on [A-Za-z. ]+)?)?: choose a\sdate\s↓$/);
       // A price on the button must also be shown next to at least one time in the table.
       if (/from/.test(await button.textContent())) await expect(page.locator("#dates")).toContainText(/from [£$]\d/);
       await button.click();
