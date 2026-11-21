@@ -74,7 +74,12 @@ for (const city of CITIES) {
         const res = await page.goto(href);
         expect(res.status(), href).toBe(200);
         await expect(page.getByRole("heading", { level: 1 })).not.toBeEmpty();
-        const links = page.locator('a[href^="/go?"]');
+        // A dated performance time if the page has one (what this test is about), otherwise the
+        // show's seller button. Before #99 the first /go link was the SeatPlan button; the new ticket
+        // button pushed it lower, where phone-size Chrome kept reporting the fixed "Go to planner" bar
+        // or the button above it in the way (a real phone shows no overlap: Yuval's screenshot, 21 Nov).
+        const times = page.locator('#dates a[href^="/go?"]');
+        const links = (await times.count()) ? times : page.locator('a[href^="/go?"]');
         if (await links.count()) { found = { href, link: links.first() }; break; }
       }
       expect(found, `no ticket link on the first 12 ${city.area} show pages`).not.toBeNull();
@@ -85,7 +90,8 @@ for (const city of CITIES) {
       expect(await found.link.getAttribute("rel")).toContain("nofollow");
       // Click it like a visitor: same tab or a new one, it must end on the seller (the stub).
       const popup = context.waitForEvent("page", { timeout: 15_000 }).catch(() => null);
-      await found.link.scrollIntoViewIfNeeded();
+      // Middle of the screen, clear of the fixed "Go to planner" bar at the bottom.
+      await found.link.evaluate(el => el.scrollIntoView({ block: "center" }));
       await found.link.click();
       const dest = (await found.link.getAttribute("target")) === "_blank" ? await popup : page;
       expect(dest, "the ticket link opened nothing").not.toBeNull();
@@ -261,7 +267,7 @@ test.describe("show page ticket button", () => {
       }
       await expect(button).toHaveCount(1);
       await expect(button).toHaveAttribute("href", "#dates");
-      await expect(button).toHaveText(/^Tickets( from [£$]\d+(\.\d\d)?)?: choose a date ↓$/);
+      await expect(button).toHaveText(/^Tickets( from [£$]\d+(\.\d\d)?)?: choose a\sdate\s↓$/);
       // A price on the button must also be shown next to at least one time in the table.
       if (/from/.test(await button.textContent())) await expect(page.locator("#dates")).toContainText(/from [£$]\d/);
       await button.click();
