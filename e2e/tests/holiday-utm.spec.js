@@ -9,6 +9,10 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".
 // Runs a snippet with the site's own code, from the repository root (lib/site-pages.js reads data/
 // relative to the working folder), and returns what it prints as JSON.
 const inSite = code => JSON.parse(execFileSync(process.execPath, ["--input-type=module", "-e", code], { cwd: ROOT, encoding: "utf8" }));
+// These tests check the code, not a deployed site, and need the site's own packages (npm ci in the
+// repository root). The "deployed site" job on GitHub installs only the test tools, so there they
+// failed with "module not found" (run 44938812219, 21 Nov 2026). They run in the local-copy job.
+const CODE_ONLY = "checks the site's code; runs with the local copy, where the site's packages are installed";
 
 // A week of sample performances: every day 14:00 and 19:00, except `dark` days (evening only).
 const WEEK_DATA = `
@@ -24,6 +28,7 @@ const WEEK_DATA = `
 
 test.describe("holiday weeks on the matinee pages", () => {
   test("Thanksgiving week (Broadway) is a page of its own and says what happens on the holiday", () => {
+    test.skip(!LOCAL, CODE_ONLY);
     const r = inSite(`import { renderMatinees, holidayInfo } from "./lib/site-pages.js";${WEEK_DATA}
       const html = renderMatinees("new-york", week("2026-11-23", ["2026-11-26"]), { week: "2026-11-23", weeks: ["2026-11-23", "2026-11-30"] });
       const plain = renderMatinees("new-york", week("2026-11-30"), { week: "2026-11-30", weeks: ["2026-11-23", "2026-11-30"] });
@@ -49,6 +54,7 @@ test.describe("holiday weeks on the matinee pages", () => {
   });
 
   test("Christmas and New Year weeks, London and New York", () => {
+    test.skip(!LOCAL, CODE_ONLY);
     const r = inSite(`import { renderMatinees } from "./lib/site-pages.js";${WEEK_DATA}
       const xmasLondon = renderMatinees("london", week("2026-12-21", ["2026-12-25"]), { week: "2026-12-21", weeks: ["2026-12-21"] });
       const xmasNy = renderMatinees("new-york", week("2026-12-21", ["2026-12-25"]), { week: "2026-12-21", weeks: ["2026-12-21"] });
@@ -66,6 +72,7 @@ test.describe("holiday weeks on the matinee pages", () => {
   });
 
   test("the main matinee page mentions a holiday inside its 7 days, and the sitemap lists holiday weeks", () => {
+    test.skip(!LOCAL, CODE_ONLY);
     const r = inSite(`import { renderMatinees, sitemapXml } from "./lib/site-pages.js";${WEEK_DATA}
       const main = renderMatinees("new-york", week("2026-11-21", ["2026-11-26"]), { week: "", weeks: ["2026-11-23"] });
       console.log(JSON.stringify({ main, map: sitemapXml("2026-11-21"), later: sitemapXml("2027-03-01") }));`);
@@ -96,6 +103,7 @@ test.describe("holiday weeks on the matinee pages", () => {
 
 test.describe("utm_source in the visitor counter", () => {
   test("the server stores the name of our own links as the source", () => {
+    test.skip(!LOCAL, CODE_ONLY);
     const r = inSite(`import { normalizeEvent, utmRef } from "./lib/events.js"; import { sourceName } from "./lib/daily-report.js";
       const ev = (extra) => normalizeEvent({ event: "pageview", page: "/", city: "", ...extra }).ref;
       console.log(JSON.stringify({
