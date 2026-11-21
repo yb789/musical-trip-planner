@@ -245,6 +245,30 @@ test.describe("Broadway shows added 20 Nov 2026", () => {
   });
 });
 
+// Show pages: a "Tickets from £X: choose a date" button at the top jumps to the dated ticket links
+// (most ticket clicks come from show pages). It only appears when there are dated ticket links to
+// jump to, and the price is the lowest "from" price Ticketmaster lists, if it lists one.
+test.describe("show page ticket button", () => {
+  test("it leads to the dated ticket links, or is absent when there are none", async ({ page }) => {
+    for (const path of ["/london/wicked/", "/new-york/wicked/", "/london/the-phantom-of-the-opera/", "/new-york/hamilton/"]) {
+      const res = await page.goto(path);
+      expect(res.status(), path).toBe(200);
+      const button = page.locator("a.btn.tix");
+      const goLinks = page.locator('#dates a[href^="/go?"]');
+      if (!(await goLinks.count())) {
+        await expect(button, `${path}: no dated ticket links, so no ticket button`).toHaveCount(0);
+        continue;
+      }
+      await expect(button).toHaveCount(1);
+      await expect(button).toHaveAttribute("href", "#dates");
+      await expect(button).toHaveText(/^Tickets( from [£$]\d+(\.\d\d)?)?: choose a date ↓$/);
+      await button.click();
+      await expect(page).toHaveURL(/#dates$/);
+      await expect(goLinks.first()).toBeInViewport();
+    }
+  });
+});
+
 test.describe("files other services rely on", () => {
   test("robots.txt, sitemap, llms.txt", async ({ request }) => {
     const robots = await (await apiGet(request, "/robots.txt")).text();
