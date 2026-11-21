@@ -1,5 +1,5 @@
 // Own usage counter: sends small anonymous beacons to /api/event (no cookies, no IP stored).
-// Counts: page views (with the referring site's host name), dates chosen, finished, exports, share,
+// Counts: page views (with the referring site's host name, or the utm_source name of our own links), dates chosen, finished, exports, share,
 // ticket (affiliate) clicks, shared plan opened. The server adds the visitor's country from Vercel's
 // geolocation header; the IP address itself is never stored.
 // Opt out on this browser: open any page with ?notrack=1 (undo with ?notrack=0). Used to keep the
@@ -30,6 +30,9 @@
       if(seller){var card=t.closest('.show-card,article,.cta,[data-show]');var el=card&&(card.querySelector('[data-show]')||card.querySelector('.show-title,h1,h2,h3'));var show=(el&&(el.dataset.show||el.textContent))||(document.querySelector('main h1,h1')||{}).textContent||'';send('ticket_click',{seller:seller,show:String(show).trim().slice(0,80)})}}
   },true);
   var ref='';try{if(document.referrer){var rh=new URL(document.referrer).hostname;if(rh!==location.hostname)ref=rh}}catch(e){}
-  send('pageview',{ref:ref});
+  // Links we post ourselves carry ?utm_source=<name> (instagram, facebook…), because apps such as Instagram
+  // open the site without a referrer and the visit would count as "Direct". Only the name is sent.
+  var utm='';try{var um=location.search.match(/[?&]utm_source=([^&#]*)/);if(um)utm=decodeURIComponent(um[1]).toLowerCase().slice(0,30)}catch(e){}
+  send('pageview',{ref:ref,utm:utm});
   if(/[?&]plan=/.test(location.search)||window.MH_SHARED_PLAN)send('plan_opened');
 })();
