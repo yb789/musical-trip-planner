@@ -182,8 +182,10 @@
   function renderWelcome() {
     const saved = savedShowCount();
     const shortN = (hs.short[hs.city] || []).length;
+    const typed = $id('mhSearch')?.querySelector('input')?.value || '';
     body.innerHTML = `<div class="mh-wrap">
       <div class="mh-center"><h1 id="mhTitle" class="mh-h1" tabindex="-1">Welcome to your Musical Planner</h1><p class="mh-sub">Plan a trip to see musicals in London or New York.</p></div>
+      <div class="mh-search" id="mhSearch" data-show-search data-city="${hs.city}" data-label="Looking for a specific show?" data-placeholder="Type a name: Hamilton, Wicked, Harry Potter…"></div>
       <h2 class="mh-q" id="mhCityQ">Which city are you travelling to?</h2>
       <div class="mh-cities" role="group" aria-labelledby="mhCityQ">
         ${CITIES.map(c => `<button type="button" data-act="city" data-city="${c}" aria-pressed="${hs.city === c}">${c === 'london' ? 'London · West End' : 'New York · Broadway'}</button>`).join('')}
@@ -202,6 +204,12 @@
       ${shortN ? `<div class="mh-note mh-green"><div>You have a shortlist of <b>${shortN} ${cityName(hs.city)} show${shortN === 1 ? '' : 's'}</b> from the helper.</div><button type="button" class="mh-btn" data-act="showresults">See my shortlist</button></div>` : ''}
       ${saved ? `<div class="mh-note"><div><b>Welcome back.</b> This browser has ${saved} chosen performance${saved === 1 ? '' : 's'} saved from a previous visit.</div><button type="button" class="mh-btn primary" data-act="know">Continue your plan</button></div>` : ''}
     </div>`;
+    // "Find a show by name" (static/show-search.js). The screen is redrawn when a city or a kind is
+    // tapped, so what was typed is carried over. If that script has not loaded yet, it fills the box itself.
+    const box = $id('mhSearch');
+    window.mtpShowSearch?.mount(box);
+    const field = box.querySelector('input');
+    if (field && typed) field.value = typed;
   }
 
   function renderQuiz() {
