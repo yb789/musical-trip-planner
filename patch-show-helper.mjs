@@ -24,7 +24,7 @@ s = s.replace(/\s*<p id="mh-browse"[\s\S]*?<\/p>/, '');
 s = s.replace(/(<section class="intro panel">[\s\S]*?)(<\/section>)/, '$1<p id="mh-browse" class="small">Browse: <a href="/london/">West End musicals</a> · <a href="/new-york/">Broadway musicals</a> · <a href="/guides/">Theatre trip guides</a></p>$2');
 // The "Find a show by name" box on the opening screen (static/show-search.js, shared with the site pages).
 s = s.replace(/\s*<script id=["']show-search-script["'][^>]*><\/script>/gi, '');
-s = s.replace('</head>', `<script id="show-search-script" defer src="/show-search.js?v=1"></script>\n<script id="show-helper-flag">window.MH_SHARED_PLAN=/[?&]plan=/.test(location.search)</script>\n<style id="show-helper-style">\n${css}\n</style>\n</head>`);
+s = s.replace('</head>', `<script id="show-search-script" defer src="/show-search.js?v=2"></script>\n<script id="show-helper-flag">window.MH_SHARED_PLAN=/[?&]plan=/.test(location.search)</script>\n<style id="show-helper-style">\n${css}\n</style>\n</head>`);
 s = s.replace('</body>', `<script id="show-helper-script">\nwindow.SHOW_GUIDE=${data};\n${js}\n</script>\n</body>`);
 
 fs.writeFileSync(file, s);

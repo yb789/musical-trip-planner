@@ -7,9 +7,13 @@ export function sampleSchedule(city, start, end) {
     ? [["Wicked", "Apollo Victoria Theatre", "wicked-tickets"], ["Hamilton", "Victoria Palace Theatre", "hamilton-tickets"], ["The Lion King", "Lyceum Theatre", "the-lion-king-tickets"]]
     : [["Wicked", "Gershwin Theatre", "wicked-broadway-tickets"], ["Hamilton", "Richard Rodgers Theatre", "hamilton-broadway-tickets"], ["The Lion King", "Minskoff Theatre", "the-lion-king-broadway-tickets"]];
   const shows = list.map(([name, venue, slug]) => ({ name, venue, ticketUrl: `${base}${slug}/`, sourceTicketUrl: "", infoUrl: "", kind: "musical" }));
+  // One play per city, evenings only. Plays are switched off unless the visitor ticks them, so the
+  // other tests don't see it; show-search.spec.js uses it for "this type is switched off".
+  const play = london ? ["The Mousetrap", "St Martin’s Theatre", "the-mousetrap-tickets"] : ["Oh, Mary!", "Lyceum Theatre", "oh-mary-tickets"];
+  shows.push({ name: play[0], venue: play[1], ticketUrl: `${base}${play[2]}/`, sourceTicketUrl: "", infoUrl: "", kind: "play" });
   const schedule = {};
   for (let d = new Date(`${start}T12:00:00Z`); d <= new Date(`${end}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
-    schedule[d.toISOString().slice(0, 10)] = list.flatMap(([name]) => ["14:30", "19:30"].map(time => [name, time, { from: london ? "£30" : "$59" }]));
+    schedule[d.toISOString().slice(0, 10)] = [...list.flatMap(([name]) => ["14:30", "19:30"].map(time => [name, time, { from: london ? "£30" : "$59" }])), [play[0], "19:30", { from: london ? "£25" : "$49" }]];
   }
   return { city, start, end, refreshedAt: new Date().toISOString(), shows, schedule, sources: ["Sample data for local tests"], concerts: { shows: [], schedule: {} } };
 }

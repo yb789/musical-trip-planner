@@ -45,7 +45,7 @@
       s.noThe = s.w.replace(/^the /, '');
       s.keys = (s.match || []).map(function (m) { return String(m).toLowerCase(); });
       s.ended = s.closed || !!(s.until && s.until < t);
-      s.href = '/' + CITY[s.city].slug + '/' + s.id + '/';
+      s.href = CITY[s.city] ? '/' + CITY[s.city].slug + '/' + s.id + '/' : '';
     });
     return list;
   }
@@ -249,6 +249,18 @@
   }
 
   function mountAll() { var all = document.querySelectorAll('[data-show-search]'); for (var i = 0; i < all.length; i++) mount(all[i]); }
-  window.mtpShowSearch = { mount: mount, mountAll: mountAll, _search: function (text, city) { return shows().then(function (l) { return search(l, text, city || ''); }); } };
+  // The same matching for another list (the planner's "Find a show" uses it for the shows of a trip):
+  // items are { title, match: [squashed other names], ... }; the matching ones come back, best first.
+  function find(items, text) {
+    var list = prepare(items.map(function (x) { var o = {}; for (var k in x) o[k] = x[k]; o.city = o.city || ''; o.id = o.id || ''; return o; }));
+    var q = words(text), qsq = q.replace(/ /g, '');
+    if (qsq.length < 2) return [];
+    var tokens = q.split(' '), hits = [];
+    list.forEach(function (s) { var sc = score(s, q, qsq, tokens); if (sc >= 0) hits.push([sc, s]); });
+    if (!hits.length && qsq.length >= 5) list.forEach(function (s) { if (fuzzy(s, tokens)) hits.push([5, s]); });
+    hits.sort(function (a, b) { return (a[0] - b[0]) || ((b[1].familiar ? 1 : 0) - (a[1].familiar ? 1 : 0)) || a[1].title.localeCompare(b[1].title); });
+    return hits.map(function (h) { return h[1]; });
+  }
+  window.mtpShowSearch = { mount: mount, mountAll: mountAll, find: find, _search: function (text, city) { return shows().then(function (l) { return search(l, text, city || ''); }); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountAll); else mountAll();
 })();
