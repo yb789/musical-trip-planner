@@ -107,6 +107,14 @@
     try { if (state.start && state.end) refreshPlanner(); } catch {}
     document.dispatchEvent(new CustomEvent('mh-kinds-change'));
   };
+  // The box that has to be ticked for this show to appear ("Find a show" in the planner offers it).
+  window.mhKindBoxFor = name => {
+    const g = window.mhGuideEntry(name);
+    const k = kindOfName(name);
+    const id = g && g.offBroadway && curCity() === 'broadway' && k === 'musical' ? 'offbroadway' : boxOf(k);
+    const row = kindsFor(curCity()).find(([x]) => x === id);
+    return row ? { id, label: row[1] } : null;
+  };
   window.mhGuideEntry = name => {
     const city = (typeof state !== 'undefined' && CITIES.includes(state.city)) ? state.city : hs.city;
     return entryForName(city, name) || entryForName(city === 'london' ? 'broadway' : 'london', name);

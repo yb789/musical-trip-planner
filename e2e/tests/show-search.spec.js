@@ -3,7 +3,7 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { test, expect, apiGet, LOCAL } from "./fixtures.js";
+import { test, expect, apiGet, tripDates, LOCAL } from "./fixtures.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const inSite = code => JSON.parse(execFileSync(process.execPath, ["--input-type=module", "-e", code], { cwd: ROOT, encoding: "utf8" }));
@@ -164,6 +164,135 @@ test.describe("site pages", () => {
     // Results only ever point at pages the site has.
     const unknown = all.filter(s => !sitemap.includes(`https://musicaltripplanner.com${s.href}<`)).map(s => s.href);
     expect(unknown).toEqual([]);
+  });
+});
+
+// ---------- "Find a show" inside the planner ----------
+const SCHEDULE_WAIT = LOCAL ? 15_000 : 150_000;
+// Start screen -> planner with a 3-day trip and the schedule loaded (as in planner.spec.js).
+async function openPlanner(page, startButton = "London · West End") {
+  await page.goto("/");
+  await expect(page.locator("#mhTitle")).toHaveText("Welcome to your Musical Planner");
+  await page.getByRole("button", { name: startButton, exact: true }).click();
+  await page.locator("button.mh-card:not(.mh-feature)").click();
+  const { start, end } = tripDates();
+  if (start.getMonth() !== new Date().getMonth()) await page.locator("#pickerNext").click();
+  const day = n => page.locator("button.picker-day:not(.past-date)").filter({ hasText: new RegExp(`^\\s*${n}\\s*$`) });
+  await day(start.getDate()).click();
+  await day(end.getDate()).click();
+  await expect(page.locator("button.picker-day.in-range")).toHaveCount(3);
+  await page.locator("#continueBtn").click();
+  await expect(page.locator("button.pc-slot.empty").filter({ hasText: /Choose/ }).first()).toBeVisible({ timeout: SCHEDULE_WAIT });
+  await expect(page.locator("#pfInput")).toBeVisible();
+}
+const found = page => page.locator("#pfResults .pf-show");
+const times = page => page.locator("#pfResults button.pf-time");
+
+test.describe("inside the planner", () => {
+  test.describe.configure({ timeout: LOCAL ? 60_000 : 360_000 });
+
+  for (const startButton of ["London · West End", "New York · Broadway"]) {
+    test(`${startButton}: a show is found on the trip's dates and a tap on a time adds it to the plan`, async ({ page }) => {
+      await openPlanner(page, startButton);
+      // A show that is on the calendar, taken from the schedule the page has loaded.
+      const show = await page.evaluate(() => {
+        const sch = current().schedule, per = new Map();
+        for (const d of days()) for (const [n, t] of (sch[d] || [])) if (kindAllowed(n) && !state.excluded[state.city].has(n)) per.set(n, [...(per.get(n) || []), d + " " + t]);
+        const [name, list] = [...per].sort((a, b) => b[1].length - a[1].length)[0];
+        return { name, title: cleanShowTitle(name), count: list.length, dates: new Set(list.map(x => x.slice(0, 10))).size };
+      });
+      await page.locator("#pfInput").fill(show.title);
+      const card = page.locator(`#pfResults .pf-show[data-show-name=${JSON.stringify(show.name)}]`);
+      await expect(card).toBeVisible();
+      await expect(card.locator("button.pf-time")).toHaveCount(show.count);
+      await expect(card).toContainText(`Plays on ${show.dates} of your 3 days`);
+      if (await found(page).count() === 1) await expect(page.locator("#planCal .pc-day.pf-hit")).toHaveCount(show.dates);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+      await expect(page.locator("button.pc-slot.filled")).toHaveCount(0);
+      const first = card.locator("button.pf-time").first();
+      const when = await first.evaluate(b => ({ date: b.dataset.date, time: b.dataset.time }));
+      await first.click();
+      await expect(page.locator("button.pc-slot.filled")).toHaveCount(1);
+      await expect(page.locator(`button.pc-slot.filled[data-date="${when.date}"]`)).toContainText(show.title);
+      // The time now shows as in the plan, and the plan is saved.
+      await expect(card.locator("button.pf-time.on")).toHaveCount(1);
+      await expect(card.locator("button.pf-time.on")).toBeDisabled();
+      const saved = await page.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem("musicalPlannerLive")).choices));
+      expect(saved).toContain(when.time);
+      expect(saved).toContain(JSON.stringify(show.name).slice(1, -1));
+
+      // Clear: results and outlines go, the choice stays.
+      await page.locator("#pfClear").click();
+      await expect(page.locator("#pfResults")).toBeHidden();
+      await expect(page.locator("#planCal .pc-day.pf-hit")).toHaveCount(0);
+      await expect(page.locator("button.pc-slot.filled")).toHaveCount(1);
+    });
+  }
+
+  test("a show that is already in the plan asks before it is added a second time", async ({ page }) => {
+    test.skip(!LOCAL, "needs the sample schedule, where the same show plays every day");
+    await openPlanner(page);
+    await page.locator("#pfInput").fill("wicked");
+    await expect(times(page)).toHaveCount(6);
+    await times(page).nth(0).click();
+    await expect(page.locator("button.pc-slot.filled")).toHaveCount(1);
+    await times(page).nth(2).click(); // the next day's matinee
+    await expect(page.locator("#duplicateOverlay")).toBeVisible();
+    await page.locator("#duplicateYes").click();
+    await expect(page.locator("button.pc-slot.filled")).toHaveCount(2);
+    await expect(page.locator("#pfResults button.pf-time.on")).toHaveCount(2);
+  });
+
+  test("a play is found while plays are switched off, with one button to switch them on", async ({ page }) => {
+    test.skip(!LOCAL, "needs the sample schedule, which has one play");
+    await openPlanner(page);
+    await page.locator("#pfInput").fill("mousetrap");
+    await expect(found(page)).toHaveCount(1);
+    await expect(found(page)).toContainText("The Mousetrap");
+    await expect(page.locator("#pfResults .pf-note")).toContainText("“Plays” is switched off");
+    await expect(times(page)).toHaveCount(3);
+    for (const b of await times(page).all()) await expect(b).toBeDisabled();
+    await expect(page.locator("#planCal .pc-day.pf-hit")).toHaveCount(0); // not on the calendar yet, so nothing to outline
+    await page.locator("#pfResults button.pf-on").click();
+    await expect(page.locator("#planCal .pc-day.pf-hit")).toHaveCount(3);
+    await expect(page.locator("#pfResults .pf-note")).toHaveCount(0);
+    await expect(times(page).first()).toBeEnabled();
+    await times(page).first().click();
+    await expect(page.locator("button.pc-slot.filled")).toContainText("The Mousetrap");
+  });
+
+  test("a show unticked in the filter is found, with one button to tick it back", async ({ page }) => {
+    test.skip(!LOCAL, "needs the sample schedule");
+    await openPlanner(page);
+    await page.evaluate(() => { state.excluded[state.city].add("Hamilton"); save(); renderSidebar(); renderDay(); });
+    await page.locator("#pfInput").fill("hamiltn"); // with a typing slip
+    await expect(found(page)).toContainText("Hamilton");
+    await expect(page.locator("#pfResults .pf-note")).toContainText("unticked this show");
+    await expect(times(page).first()).toBeDisabled();
+    await page.locator("#pfResults button.pf-tick").click();
+    await expect(page.locator("#pfResults .pf-note")).toHaveCount(0);
+    await expect(times(page).first()).toBeEnabled();
+    expect(await page.evaluate(() => state.excluded[state.city].has("Hamilton"))).toBe(false);
+  });
+
+  test("a show that is not on these dates, in the other city, or unknown gets a clear answer", async ({ page }) => {
+    test.skip(!LOCAL, "needs the sample schedule, which has only four London shows");
+    await openPlanner(page);
+    const msg = page.locator("#pfResults .pf-msg");
+    await page.locator("#pfInput").fill("phantom");
+    await expect(msg).toContainText("The Phantom of the Opera has no performances listed on your dates");
+    await expect(msg.locator('a[href="/london/the-phantom-of-the-opera/"]')).toBeVisible();
+    await page.locator("#pfInput").fill("aladdin");
+    await expect(msg).toContainText("Aladdin plays in New York; this plan is for London");
+    await expect(msg.locator('a[href="/new-york/aladdin/"]')).toBeVisible();
+    await page.locator("#pfInput").fill("zzqqxx");
+    await expect(msg).toContainText("No show called “zzqqxx”");
+    await expect(found(page)).toHaveCount(0);
+    // "change your dates" opens the date screen.
+    await page.locator("#pfInput").fill("phantom");
+    await page.locator("#pfDates").click();
+    await expect(page.locator("#continueBtn")).toBeVisible();
   });
 });
 

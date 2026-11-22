@@ -1,0 +1,33 @@
+/* "Find a show" inside the planner (planner-find.js). */
+.pf{margin:0 0 14px;padding:14px;border:1px solid var(--line);border-radius:16px;background:#fffaf2}
+.pf[hidden]{display:none}
+.pf-label{display:block;font-weight:800;font-size:15px;margin:0 0 8px}
+.pf-field{position:relative;display:flex;gap:8px}
+.pf-field svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted)}
+#pfInput{flex:1;min-width:0;min-height:48px;padding:10px 14px 10px 42px;border-radius:12px;border:1px solid #cfc7ba;background:#fff;color:var(--ink);font-size:16px;-webkit-appearance:none;appearance:none}
+#pfInput:focus-visible{outline:3px solid #d6a860;outline-offset:1px;border-color:var(--green)}
+#pfInput::-webkit-search-cancel-button{display:none}
+#pfClear{min-height:48px;padding:0 14px;border-radius:12px;font-weight:700}
+#pfInput:placeholder-shown+#pfClear{display:none}
+.pf-hint{margin:8px 0 0;font-size:13px;color:var(--muted)}.pf-hint[hidden]{display:none}
+.pf-results{margin-top:12px;display:flex;flex-direction:column;gap:10px}.pf-results[hidden]{display:none}
+.pf-show{padding:12px 14px;border-radius:14px;background:var(--paper);border:1px solid var(--line)}
+.pf-show-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px}
+.pf-title{font:700 18px/1.25 Georgia,serif}
+.pf-venue{font-size:13px;color:var(--muted)}
+.pf-sum{font-size:13px;color:var(--muted);margin:4px 0 8px}
+.pf-note{font-size:14px;line-height:1.45;padding:10px 12px;border-radius:10px;background:#fbf0e9;margin:0 0 10px}
+.pf-note button{margin:6px 0 0;min-height:40px;font-weight:700;display:block}
+.pf-days{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.pf-day{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pf-date{flex:0 0 96px;font-size:14px;font-weight:700}
+.pf-times{display:flex;flex-wrap:wrap;gap:6px}
+.pf-time{min-height:44px;min-width:72px;padding:0 14px;border-radius:999px;border:1px solid var(--green);background:#fff;color:var(--green);font-weight:800;font-size:15px}
+.pf-time:hover:not([disabled]){background:#edf3f0}
+.pf-time.on{background:var(--green);color:#fff;opacity:1}
+.pf-time[disabled]:not(.on){border-color:var(--line);color:var(--muted);background:#f4f0e8}
+.pf-msg{padding:12px 14px;border-radius:14px;background:var(--paper);border:1px dashed var(--line);font-size:15px;line-height:1.5}
+.pf-link{border:0;background:none;padding:0;min-height:0;color:var(--accent);font:inherit;font-weight:600;text-decoration:underline;cursor:pointer}
+.pf-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pc-day.pf-hit{box-shadow:0 0 0 3px #d6a860;border-color:#d6a860}
+@media(max-width:560px){.pf{padding:12px}.pf-date{flex-basis:100%}}
