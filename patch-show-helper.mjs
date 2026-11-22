@@ -11,8 +11,8 @@ const guide = {
 };
 // Keep only what the page needs, and make the JSON safe inside a <script> tag.
 const slim = Object.fromEntries(Object.entries(guide).map(([city, d]) => [city, {
-  shows: d.shows.map(({ id, title, match, venue, status, dates, bookingUntil, limitedRun, vibes, audience, familiar, runtime, blurb, listen, kind, offBroadway, offWestEnd, tickets, parts, partsNote, venueBox }) =>
-    ({ id, title, match, venue, status, dates, bookingUntil, limitedRun, vibes, audience, familiar, runtime, blurb, listen, ...(kind ? { kind } : {}), ...(offBroadway ? { offBroadway: true } : {}), ...(offWestEnd ? { offWestEnd: true } : {}), ...(tickets ? { tickets } : {}), ...(parts ? { parts, partsNote } : {}), ...(venueBox ? { venueBox } : {}) }))
+  shows: d.shows.map(({ id, title, match, venue, status, dates, bookingUntil, limitedRun, vibes, audience, familiar, runtime, blurb, listen, kind, offBroadway, offWestEnd, tickets, parts, partsNote, venueBox, closed }) =>
+    ({ id, title, match, venue, status, dates, bookingUntil, limitedRun, vibes, audience, familiar, runtime, blurb, listen, ...(kind ? { kind } : {}), ...(offBroadway ? { offBroadway: true } : {}), ...(offWestEnd ? { offWestEnd: true } : {}), ...(tickets ? { tickets } : {}), ...(parts ? { parts, partsNote } : {}), ...(venueBox ? { venueBox } : {}), ...(closed ? { closed: true } : {}) }))
 }]));
 const data = JSON.stringify(slim).replace(/</g, '\\u003c');
 
@@ -22,7 +22,9 @@ s = s.replace(/\s*<script id=["']show-helper-script["'][\s\S]*?<\/script>\s*/gi,
 // Crawlable links from the planner's intro to the show pages and guides.
 s = s.replace(/\s*<p id="mh-browse"[\s\S]*?<\/p>/, '');
 s = s.replace(/(<section class="intro panel">[\s\S]*?)(<\/section>)/, '$1<p id="mh-browse" class="small">Browse: <a href="/london/">West End musicals</a> · <a href="/new-york/">Broadway musicals</a> · <a href="/guides/">Theatre trip guides</a></p>$2');
-s = s.replace('</head>', `<script id="show-helper-flag">window.MH_SHARED_PLAN=/[?&]plan=/.test(location.search)</script>\n<style id="show-helper-style">\n${css}\n</style>\n</head>`);
+// The "Find a show by name" box on the opening screen (static/show-search.js, shared with the site pages).
+s = s.replace(/\s*<script id=["']show-search-script["'][^>]*><\/script>/gi, '');
+s = s.replace('</head>', `<script id="show-search-script" defer src="/show-search.js?v=1"></script>\n<script id="show-helper-flag">window.MH_SHARED_PLAN=/[?&]plan=/.test(location.search)</script>\n<style id="show-helper-style">\n${css}\n</style>\n</head>`);
 s = s.replace('</body>', `<script id="show-helper-script">\nwindow.SHOW_GUIDE=${data};\n${js}\n</script>\n</body>`);
 
 fs.writeFileSync(file, s);

@@ -45,4 +45,6 @@ fs.copyFileSync('index.html', 'public/index.html');
 fs.cpSync('static', 'public', { recursive: true });
 // Replaces the static sitemap with one listing every show page and guide.
 execFileSync(process.execPath, ['build-sitemap.mjs'], { stdio: 'inherit' });
+// Show names for the "Find a show by name" box on the site pages (static/show-search.js).
+execFileSync(process.execPath, ['build-show-index.mjs'], { stdio: 'inherit' });
 console.log('\nBuild complete: public/index.html written.');
