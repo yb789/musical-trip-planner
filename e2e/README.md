@@ -12,6 +12,7 @@ size, and Safari's engine at iPhone size), and fail if anything on the way break
 | `tests/pages.spec.js` | About, terms, privacy, guides, city pages, show pages (times and ticket links), matinees pages and week picker, 404s, robots.txt, sitemap (and a sample of its pages), manifest, Android link file, service worker, icons, security headers, certificate |
 | `tests/helper.spec.js` | "Help me choose": four questions, shortlist, on to the planner |
 | `tests/show-search.spec.js` | "Find a show by name" on the opening screen and at the top of the site pages: both cities, short names, typing slips, plays and spectaculars, a name that is not in the guide, keyboard use, every show in the guide can be found, search counting |
+| `tests/show-titles.spec.js` | Show-page titles and descriptions: matinee, finish and running time when the running time is known (code check, local copy only) |
 
 Every test also fails on a script error, a Content-Security-Policy violation, or a server error
 from the site.
