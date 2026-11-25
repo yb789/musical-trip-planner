@@ -40,7 +40,11 @@ async function chooseShow(page, slotLabel, avoid = []) {
   const slot = page.locator("button.pc-slot.empty").filter({ hasText: slotLabel }).filter({ hasText: /Choose/ }).first();
   await slot.click(); // scrolls to it and waits out the calendar redrawing itself
   await expect(page.locator("#pcModalTitle")).toBeVisible();
-  const picks = page.locator("button.pick:not([disabled])").filter({ hasText: "Choose" });
+  // Only the buttons a visitor can press in this pop-up. The planner's other view keeps its own
+  // (hidden) Choose buttons for every session in the page, and a page-wide locator picked one of
+  // those on 25 Nov 2026 (a hidden 14:00 Cabaret button while choosing an evening), so the click
+  // waited for six minutes. Shows with several start times have time buttons instead of "Choose".
+  const picks = page.locator("#pcList button.pick:not([disabled]):not(.selected)").filter({ visible: true });
   await expect(picks.first()).toBeVisible();
   const names = await picks.evaluateAll(bs => bs.map(b => b.dataset.name));
   let index = names.findIndex(n => !avoid.includes(n));
