@@ -36,11 +36,17 @@ async function openPlanner(page, city) {
 }
 
 // Opens an empty slot of that kind and takes a show nobody picked yet. Returns the show's name.
-async function chooseShow(page, slotLabel, avoid = []) {
-  const slot = page.locator("button.pc-slot.empty").filter({ hasText: slotLabel }).filter({ hasText: /Choose/ }).first();
-  await slot.click(); // scrolls to it and waits out the calendar redrawing itself
+// slot: the slot's key ("matinee", "evening"). Matching the label text also matched "Early evening"
+// slots, which on 25 Nov 2026 offered only the show already chosen as the matinee.
+async function chooseShow(page, slot, avoid = []) {
+  const slotBtn = page.locator(`button.pc-slot.empty[data-slot="${slot}"]`).filter({ hasText: /Choose/ }).first();
+  await slotBtn.click(); // scrolls to it and waits out the calendar redrawing itself
   await expect(page.locator("#pcModalTitle")).toBeVisible();
-  const picks = page.locator("button.pick:not([disabled])").filter({ hasText: "Choose" });
+  // Only the buttons a visitor can press in this pop-up. The planner's other view keeps its own
+  // (hidden) Choose buttons for every session in the page, and a page-wide locator picked one of
+  // those on 25 Nov 2026 (a hidden 14:00 Cabaret button while choosing an evening), so the click
+  // waited for six minutes. Shows with several start times have time buttons instead of "Choose".
+  const picks = page.locator("#pcList button.pick:not([disabled]):not(.selected)").filter({ visible: true });
   await expect(picks.first()).toBeVisible();
   const names = await picks.evaluateAll(bs => bs.map(b => b.dataset.name));
   let index = names.findIndex(n => !avoid.includes(n));
@@ -55,8 +61,8 @@ for (const city of CITIES) {
     test("plan a matinee and an evening, finish, and reach the ticket seller", async ({ page, context }) => {
       await openPlanner(page, city);
 
-      const matinee = await chooseShow(page, "Matinee");
-      const evening = await chooseShow(page, "Evening", [matinee]);
+      const matinee = await chooseShow(page, "matinee");
+      const evening = await chooseShow(page, "evening", [matinee]);
       await expect(page.locator("button.pc-slot.filled")).toHaveCount(2);
       await expect(page.locator("button.pc-slot.filled").filter({ hasText: matinee }).first()).toBeVisible();
       await expect(page.locator("button.pc-slot.filled").filter({ hasText: evening }).first()).toBeVisible();
@@ -101,7 +107,7 @@ for (const city of CITIES) {
 
     test("mark as booked, and export to Excel, PDF and calendar", async ({ page }) => {
       await openPlanner(page, city);
-      await chooseShow(page, "Matinee");
+      await chooseShow(page, "matinee");
       await page.locator("#finishBtn").click();
       await page.locator("#finishYes").click();
       await expect(page.getByRole("heading", { name: "Your plan is ready" })).toBeVisible();
@@ -149,7 +155,7 @@ test("share a plan: the link opens the same plan for someone else", async ({ pag
   // One shared plan per run is enough; it is a real row in the plans table.
   test.skip(testInfo.project.name !== "desktop-chrome", "run once, on desktop");
   await openPlanner(page, CITIES[0]);
-  const show = await chooseShow(page, "Evening");
+  const show = await chooseShow(page, "evening");
   const created = page.waitForResponse(r => new URL(r.url()).pathname === "/api/plan" && r.request().method() === "POST");
   await page.locator("#shareBtn").click();
   const res = await created;
