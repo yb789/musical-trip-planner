@@ -34,7 +34,9 @@ test.describe("plays on the matinee pages", () => {
     expect(r.html).toContain('<h2 id="plays">Plays with a matinee this week</h2>');
     expect(r.html).toContain('<a href="/new-york/harry-potter-and-the-cursed-child/">Harry Potter and the Cursed Child</a>');
     // Finish time from the running time (Oh, Mary! 1h 20m); evening performances are not listed.
-    expect(r.html).toContain("3:00 pm → 4:20 pm");
+    expect(r.html).toContain("3:00\u00a0pm\u00a0→ 4:20\u00a0pm");
+    // Each matinee stays on one line ("Wed 2:00 pm" wrapped onto two lines on the live page, 25 Nov 2026).
+    expect(r.html).toContain('<td class="nw">Wed 2:00 pm<br>Sat 2:00 pm</td>');
     expect(r.html).not.toContain("8:00 pm");
     expect(r.html).toContain("Which Broadway plays have matinees this week?");
     expect(r.html).toContain("Harry Potter and the Cursed Child (Wed 2:00 pm; Sat 2:00 pm) and Oh, Mary! (Wed 3:00 pm; Sat 3:00 pm).");
@@ -45,5 +47,25 @@ test.describe("plays on the matinee pages", () => {
     // A week without play matinees has no plays table, and the description does not mention plays.
     expect(r.none).not.toContain('id="plays"');
     expect(r.none).not.toContain("Plus 0 plays");
+  });
+
+  // "Wed 2:00 pm" wrapped onto two lines on the live page (25 Nov 2026). Each matinee keeps to one
+  // line, and the table still fits a phone screen: a finish time may break after its arrow there.
+  test("the plays table keeps each time on one line and fits a phone screen", async ({ page }) => {
+    test.skip(!LOCAL, CODE_ONLY);
+    const html = inSite(`import { renderMatinees } from "./lib/site-pages.js";${WEEK_DATA}
+      console.log(JSON.stringify(renderMatinees("new-york", week("2026-11-30"), {})));`);
+    for (const width of [375, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.setContent(html);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow, `page wider than the screen at ${width}px`).toBeLessThanOrEqual(0);
+      // Every "Wed 2:00 pm" text in the Matinees column is drawn on a single line.
+      const wrapped = await page.locator("#plays + p + .card tbody td:nth-child(2)").evaluateAll(tds => tds.flatMap(td =>
+        [...td.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim()).filter(n => {
+          const r = document.createRange(); r.selectNodeContents(n); return r.getClientRects().length > 1;
+        }).map(n => n.textContent)));
+      expect(wrapped, `matinee times wrapped at ${width}px`).toEqual([]);
+    }
   });
 });
