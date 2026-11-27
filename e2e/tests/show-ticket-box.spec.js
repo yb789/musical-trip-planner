@@ -27,11 +27,13 @@ test.describe("show-page ticket box", () => {
         _embedded: { venues: [{ name: "Apollo Victoria Theatre", city: { name: "London" } }] } });
       const events = [ev("2026-11-27", "09:30"), ev("2026-11-27", "19:30", "cancelled"), ev("2026-11-28", "14:30", "onsale", 29), ev("2026-11-28", "19:30", "onsale", 35)];
       const fetchImpl = async () => ({ ok: true, status: 200, json: async () => ({ _embedded: { events } }) });
-      const html = await renderShow("london", "wicked", { fetchImpl, now });
+      const html = await renderShow("london", "wicked", { fetchImpl, now, seatPlanPage: "https://seatplan.com/london/wicked-tickets/" });
+      const noSp = await renderShow("london", "wicked", { fetchImpl, now, seatPlanPage: null });
+      const noSpBox = (noSp.match(/<section class="card nexttix"[\\s\\S]*?<\\/section>/) || [""])[0];
       const box = (html.match(/<section class="card nexttix"[\\s\\S]*?<\\/section>/) || [""])[0];
       const evOnly = nextPerformances([{ date: "2026-11-28", time: "19:30", url: "https://www.ticketmaster.co.uk/x", status: "onsale" }], now);
       const none = nextPerformances([{ date: "2026-11-26", time: "19:30", url: "https://www.ticketmaster.co.uk/x", status: "onsale" }], now);
-      console.log(JSON.stringify({ box, boxFirst: html.indexOf("nexttix") < html.indexOf('class="pills"'), oldButton: html.includes('class="btn tix" href="#dates"'), evOnly, none }));`);
+      console.log(JSON.stringify({ box, noSpBox, boxFirst: html.indexOf("nexttix") < html.indexOf('class="pills"'), oldButton: html.includes('class="btn tix" href="#dates"'), evOnly, none }));`);
     // The box is there, above the show's description.
     expect(r.box).toContain("Next performances");
     expect(r.boxFirst).toBe(true);
@@ -40,18 +42,29 @@ test.describe("show-page ticket box", () => {
     expect(r.box).toContain("Sat 28 Nov · 2:30 pm");
     expect(r.box).toContain("Sat 28 Nov · 7:30 pm");
     expect(r.box).not.toContain("27 Nov");
-    expect(r.box).toContain("Tickets from £29");
-    expect(r.box).toContain("Tickets from £35");
+    // The price sits above the buttons with its seller named; the buttons carry no price.
+    expect(r.box).toContain("from £29 on Ticketmaster");
+    expect(r.box).toContain("from £35 on Ticketmaster");
     expect(r.box).toContain("ends about 5:15 pm");
-    // Every ticket button goes through /go to the seller page of that performance, tagged top-<show>.
-    const hrefs = [...r.box.matchAll(/class="btn tix" href="([^"]+)"/g)].map(m => m[1].replace(/&amp;/g, "&"));
-    expect(hrefs).toHaveLength(2);
-    for (const h of hrefs) {
-      const u = new URL(h, "https://musicaltripplanner.com");
+    // Each slot: Ticketmaster and SeatPlan buttons of the same kind (27 Nov 2026, Yuval: "the same"),
+    // both through /go, tagged top-<show>, each to that performance's page with that seller.
+    const buttons = [...r.box.matchAll(/<a class="btn tix" href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map(m => ({ href: m[1].replace(/&amp;/g, "&"), text: m[2] }));
+    expect(buttons.map(b => b.text)).toEqual(["Ticketmaster ↗", "SeatPlan ↗", "Ticketmaster ↗", "SeatPlan ↗"]);
+    const sellerPages = buttons.map(b => {
+      const u = new URL(b.href, "https://musicaltripplanner.com");
       expect(u.pathname).toBe("/go");
-      expect(new URL(u.searchParams.get("u")).hostname).toBe("www.ticketmaster.co.uk");
       expect(u.searchParams.get("subId1")).toBe("top-wicked");
-    }
+      return u.searchParams.get("u");
+    });
+    expect(sellerPages).toEqual([
+      "https://www.ticketmaster.co.uk/wicked/event/2026-11-281430",
+      "https://seatplan.com/london/wicked-tickets/tickets/28-nov-2026/2-30pm/",
+      "https://www.ticketmaster.co.uk/wicked/event/2026-11-281930",
+      "https://seatplan.com/london/wicked-tickets/tickets/28-nov-2026/7-30pm/",
+    ]);
+    // A show SeatPlan doesn't list: Ticketmaster alone.
+    expect([...r.noSpBox.matchAll(/class="btn tix"/g)]).toHaveLength(2);
+    expect(r.noSpBox).not.toContain("SeatPlan");
     expect(r.box).toMatch(/rel="noopener nofollow sponsored"/);
     // The planner is the second step, inside the box.
     expect(r.box).toContain('href="/?city=london&amp;show=wicked#/plan"');
@@ -83,6 +96,13 @@ test.describe("show-page ticket box", () => {
       break;
     }
     expect(button, "no show page with a ticket box among the samples").not.toBeNull();
+    // Where SeatPlan lists the show, its button opens the same performance on SeatPlan.
+    const spButton = page.locator('#nextTickets a.btn.tix', { hasText: "SeatPlan" }).first();
+    if (await spButton.count()) {
+      const sp = new URL(new URL(await spButton.getAttribute("href"), page.url()).searchParams.get("u"));
+      expect(sp.hostname).toBe("seatplan.com");
+      expect(sp.pathname).toMatch(/-tickets\/tickets\/\d{1,2}-[a-z]{3}-\d{4}\/\d{1,2}-\d{2}(am|pm)\/$/);
+    }
     const target = new URL(await button.getAttribute("href"), page.url());
     expect(target.searchParams.get("subId1")).toMatch(/^top-[a-z0-9-]+$/);
     expect(new URL(target.searchParams.get("u")).hostname).toMatch(/(^|\.)(ticketmaster\.com|ticketmaster\.co\.uk|seatplan\.com)$/);
