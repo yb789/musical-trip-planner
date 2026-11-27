@@ -251,9 +251,11 @@ test.describe("Broadway shows added 20 Nov 2026", () => {
   });
 });
 
-// Show pages: a "Tickets from £X: choose a date" button at the top jumps to the dated ticket links
-// (most ticket clicks come from show pages). It only appears when there are dated ticket links to
-// jump to, and the price is the lowest "from" price Ticketmaster lists, if it lists one.
+// Show pages: a ticket entry at the top leads to the dated ticket links (most ticket clicks come from
+// show pages). Since 27 Nov 2026 (PR #110) that is the "Next performances" box: direct ticket buttons
+// for the next matinee and evening, and "Other dates ↓" to the table. The older "Tickets from £X:
+// choose a date ↓" button is only shown when the box isn't (no bookable upcoming performance with a
+// start time). Nothing at the top when there are no dated ticket links.
 test.describe("show page ticket button", () => {
   test("it leads to the dated ticket links, or is absent when there are none", async ({ page }) => {
     for (const path of ["/london/wicked/", "/new-york/wicked/", "/london/the-phantom-of-the-opera/", "/new-york/hamilton/"]) {
@@ -263,10 +265,29 @@ test.describe("show page ticket button", () => {
       // the dates table wider than a phone, so Chrome zoomed the page out and taps landed one row off.
       const widths = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
       expect(widths[0], `${path} is wider than the screen`).toBeLessThanOrEqual(widths[1]);
-      const button = page.locator("a.btn.tix");
+      const button = page.locator('a.btn.tix[href="#dates"]');
+      const box = page.locator("#nextTickets");
       const goLinks = page.locator('#dates a[href^="/go?"]');
       if (!(await goLinks.count())) {
         await expect(button, `${path}: no dated ticket links, so no ticket button`).toHaveCount(0);
+        await expect(box, `${path}: no dated ticket links, so no ticket box`).toHaveCount(0);
+        continue;
+      }
+      if (await box.count()) {
+        // The box replaces the old button: never both.
+        await expect(button, `${path}: the box and the old button are both shown`).toHaveCount(0);
+        const tix = box.locator("a.btn.tix");
+        expect(await tix.count(), `${path}: the box has no ticket button`).toBeGreaterThan(0);
+        for (const a of await tix.all()) {
+          await expect(a).toHaveAttribute("href", /^\/go\?u=https%3A%2F%2F[^&]+&subId1=top-[a-z0-9-]+$/);
+          await expect(a).toHaveText(/^(Tickets from [£$]\d+(\.\d\d)?|See tickets) ↗$/);
+          // A price on a box button is the price of that performance, so it's in the table too.
+          if (/from/.test(await a.textContent())) await expect(page.locator("#dates")).toContainText(/from [£$]\d/);
+        }
+        const other = box.getByRole("link", { name: "Other dates ↓" });
+        await other.click();
+        await expect(page).toHaveURL(/#dates$/);
+        await expect(goLinks.first()).toBeInViewport();
         continue;
       }
       await expect(button).toHaveCount(1);
