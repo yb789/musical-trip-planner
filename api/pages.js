@@ -1,11 +1,13 @@
-import { CITIES, renderShow, renderCity, renderMatinees, matineeWeekOptions, renderGuide, renderGuidesIndex, renderAbout, renderPrivacy, renderTerms, notFound } from "../lib/site-pages.js";
+import { CITIES, HOLIDAY_DAYS, holidayDate, mondayOf, renderHolidayDay, renderShow, renderCity, renderMatinees, matineeWeekOptions, renderGuide, renderGuidesIndex, renderAbout, renderPrivacy, renderTerms, notFound } from "../lib/site-pages.js";
 import { cachedSchedule, storedSchedule } from "../lib/schedule-cache.js";
 import { handleGo } from "../lib/go.js";
+import { loadSeatPlanShows } from "../lib/seatplan.js";
 
 // Indexable pages, reached through vercel.json rewrites:
 //   /london/  /new-york/            -> ?type=city&city=…
 //   /london/matinees/ /new-york/matinees/ -> ?type=matinees&city=…  (&week=<Monday> for a later week)
-//   /london/:slug/  /new-york/:slug/ -> ?type=show&city=…&slug=…
+//   /london/:slug/  /new-york/:slug/ -> ?type=show&city=…&slug=…  (a holiday slug such as
+//                                       christmas-eve or boxing-day is a Christmas & New Year day page)
 //   /guides/  /guides/:slug/         -> ?type=guide&slug=…
 //   /about/                          -> ?type=about
 //   /go?u=…&subId1=…                 -> ?type=go  (ticket redirect, lib/go.js)
@@ -43,6 +45,21 @@ export default async function handler(req, res) {
         res.setHeader("Retry-After", "600");
         return res.status(503).send('<!doctype html><meta charset=utf-8><title>Temporarily unavailable</title><p style="font-family:sans-serif;padding:24px">The live schedule could not be read right now. Please try again in a few minutes, or <a href="/#/plan">open the planner</a>.</p>');
       }
+    }
+    else if (type === "show" && CITIES[city] && HOLIDAY_DAYS[slug]) {
+      // Christmas & New Year day pages: the planner schedule for the week the day falls in (the same
+      // stored copy as the holiday-week matinee page), only while the day is within 8 weeks.
+      const now = new Date();
+      const date = holidayDate(slug, now);
+      let data = null;
+      if ((Date.parse(date + "T12:00:00Z") - now.getTime()) / 86400000 <= 56) {
+        try { data = await cachedSchedule(city, new Date(mondayOf(date) + "T12:00:00Z")); }
+        catch (err) { console.error("holiday page schedule failed", city, slug, err?.message || err); }
+      }
+      let spShows = [];
+      try { spShows = await Promise.race([loadSeatPlanShows(CITIES[city].data), new Promise(r => setTimeout(() => r([]), 4000))]); } catch { spShows = []; }
+      html = renderHolidayDay(city, slug, data, { now, spShows });
+      cache = data ? "public, max-age=300, s-maxage=43200, stale-while-revalidate=86400" : "public, max-age=60, s-maxage=600";
     }
     else if (type === "show" && CITIES[city] && /^[a-z0-9-]{1,80}$/.test(slug)) {
       const meta = {};
