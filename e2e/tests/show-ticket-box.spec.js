@@ -48,8 +48,10 @@ test.describe("show-page ticket box", () => {
     expect(r.box).toContain("ends about 5:15 pm");
     // Each slot: Ticketmaster and SeatPlan buttons of the same kind (27 Nov 2026, Yuval: "the same"),
     // both through /go, tagged top-<show>, each to that performance's page with that seller.
-    const buttons = [...r.box.matchAll(/<a class="btn tix" href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map(m => ({ href: m[1].replace(/&amp;/g, "&"), text: m[2] }));
+    const buttons = [...r.box.matchAll(/<a class="btn tix (tm|sp)" href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map(m => ({ cls: m[1], href: m[2].replace(/&amp;/g, "&"), text: m[3] }));
     expect(buttons.map(b => b.text)).toEqual(["Ticketmaster ↗", "SeatPlan ↗", "Ticketmaster ↗", "SeatPlan ↗"]);
+    // Each seller its own colour (Yuval, 27 Nov): Ticketmaster blue (class tm), SeatPlan dark red (sp).
+    expect(buttons.map(b => b.cls)).toEqual(["tm", "sp", "tm", "sp"]);
     const sellerPages = buttons.map(b => {
       const u = new URL(b.href, "https://musicaltripplanner.com");
       expect(u.pathname).toBe("/go");
@@ -63,7 +65,7 @@ test.describe("show-page ticket box", () => {
       "https://seatplan.com/london/wicked-tickets/tickets/28-nov-2026/7-30pm/",
     ]);
     // A show SeatPlan doesn't list: Ticketmaster alone.
-    expect([...r.noSpBox.matchAll(/class="btn tix"/g)]).toHaveLength(2);
+    expect([...r.noSpBox.matchAll(/class="btn tix tm"/g)]).toHaveLength(2);
     expect(r.noSpBox).not.toContain("SeatPlan");
     expect(r.box).toMatch(/rel="noopener nofollow sponsored"/);
     // The planner is the second step, inside the box.
@@ -102,6 +104,13 @@ test.describe("show-page ticket box", () => {
       const sp = new URL(new URL(await spButton.getAttribute("href"), page.url()).searchParams.get("u"));
       expect(sp.hostname).toBe("seatplan.com");
       expect(sp.pathname).toMatch(/-tickets\/tickets\/\d{1,2}-[a-z]{3}-\d{4}\/\d{1,2}-\d{2}(am|pm)\/$/);
+    }
+    if (await spButton.count()) {
+      // Ticketmaster blue, SeatPlan a different colour.
+      const bg = l => l.evaluate(el => getComputedStyle(el).backgroundColor);
+      const tmButton = page.locator("#nextTickets a.btn.tix", { hasText: "Ticketmaster" }).first();
+      expect(await bg(tmButton)).toBe("rgb(2, 77, 223)");
+      expect(await bg(spButton)).not.toBe(await bg(tmButton));
     }
     const target = new URL(await button.getAttribute("href"), page.url());
     expect(target.searchParams.get("subId1")).toMatch(/^top-[a-z0-9-]+$/);
