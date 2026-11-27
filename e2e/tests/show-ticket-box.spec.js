@@ -33,7 +33,8 @@ test.describe("show-page ticket box", () => {
       const box = (html.match(/<section class="card nexttix"[\\s\\S]*?<\\/section>/) || [""])[0];
       const evOnly = nextPerformances([{ date: "2026-11-28", time: "19:30", url: "https://www.ticketmaster.co.uk/x", status: "onsale" }], now);
       const none = nextPerformances([{ date: "2026-11-26", time: "19:30", url: "https://www.ticketmaster.co.uk/x", status: "onsale" }], now);
-      console.log(JSON.stringify({ box, noSpBox, boxFirst: html.indexOf("nexttix") < html.indexOf('class="pills"'), oldButton: html.includes('class="btn tix" href="#dates"'), evOnly, none }));`);
+      const dates = (html.match(/<div class="card" id="dates">[\\s\\S]*?<\\/table>/) || [""])[0];
+      console.log(JSON.stringify({ box, noSpBox, dates, boxFirst: html.indexOf("nexttix") < html.indexOf('class="pills"'), oldButton: html.includes('class="btn tix" href="#dates"'), evOnly, none }));`);
     // The box is there, above the show's description.
     expect(r.box).toContain("Next performances");
     expect(r.boxFirst).toBe(true);
@@ -43,8 +44,9 @@ test.describe("show-page ticket box", () => {
     expect(r.box).toContain("Sat 28 Nov · 7:30 pm");
     expect(r.box).not.toContain("27 Nov");
     // The price sits above the buttons with its seller named; the buttons carry no price.
-    expect(r.box).toContain("from £29 on Ticketmaster");
-    expect(r.box).toContain("from £35 on Ticketmaster");
+    // "Tickets from £X" in big type above both buttons, with where the price was seen (27 Nov 2026).
+    expect(r.box).toContain('<span class="from">Tickets from £29<small>lowest price seen on Ticketmaster</small></span>');
+    expect(r.box).toContain('<span class="from">Tickets from £35<small>lowest price seen on Ticketmaster</small></span>');
     expect(r.box).toContain("ends about 5:15 pm");
     // Each slot: Ticketmaster and SeatPlan buttons of the same kind (27 Nov 2026, Yuval: "the same"),
     // both through /go, tagged top-<show>, each to that performance's page with that seller.
@@ -62,6 +64,22 @@ test.describe("show-page ticket box", () => {
       "https://www.ticketmaster.co.uk/wicked/event/2026-11-281430",
       "https://seatplan.com/london/wicked-tickets/tickets/28-nov-2026/2-30pm/",
       "https://www.ticketmaster.co.uk/wicked/event/2026-11-281930",
+      "https://seatplan.com/london/wicked-tickets/tickets/28-nov-2026/7-30pm/",
+    ]);
+    // The cancelled 7:30 pm on 27 Nov stays in the table, marked, with no ticket buttons.
+    expect(r.dates).toContain('<span class="tt">7:30 pm</span><span class="end">cancelled</span>');
+    // The dates table: under every bookable time, Ticketmaster and SeatPlan for that performance, in the same
+    // colours (27 Nov 2026: tapping a time always went to Ticketmaster).
+    const chips = [...r.dates.matchAll(/<a class="chip (tm|sp)" href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map(m => ({ cls: m[1], u: new URL(m[2].replace(/&amp;/g, "&"), "https://musicaltripplanner.com"), text: m[3] }));
+    expect(chips.map(c => c.text)).toEqual(["Ticketmaster", "SeatPlan", "Ticketmaster", "SeatPlan", "Ticketmaster", "SeatPlan"]);
+    expect(chips.map(c => c.cls)).toEqual(["tm", "sp", "tm", "sp", "tm", "sp"]);
+    for (const c of chips) {
+      expect(c.u.pathname).toBe("/go");
+      expect(c.u.searchParams.get("subId1")).toBe("show-wicked");
+    }
+    expect(chips.filter(c => c.cls === "sp").map(c => c.u.searchParams.get("u"))).toEqual([
+      "https://seatplan.com/london/wicked-tickets/tickets/27-nov-2026/9-30am/",
+      "https://seatplan.com/london/wicked-tickets/tickets/28-nov-2026/2-30pm/",
       "https://seatplan.com/london/wicked-tickets/tickets/28-nov-2026/7-30pm/",
     ]);
     // A show SeatPlan doesn't list: Ticketmaster alone.
