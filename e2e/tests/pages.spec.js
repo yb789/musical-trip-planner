@@ -280,10 +280,12 @@ test.describe("show page ticket button", () => {
         expect(await tix.count(), `${path}: the box has no ticket button`).toBeGreaterThan(0);
         for (const a of await tix.all()) {
           await expect(a).toHaveAttribute("href", /^\/go\?u=https%3A%2F%2F[^&]+&subId1=top-[a-z0-9-]+$/);
-          await expect(a).toHaveText(/^(Tickets from [£$]\d+(\.\d\d)?|See tickets) ↗$/);
-          // A price on a box button is the price of that performance, so it's in the table too.
-          if (/from/.test(await a.textContent())) await expect(page.locator("#dates")).toContainText(/from [£$]\d/);
+          // Since 27 Nov 2026 each slot has equal Ticketmaster and SeatPlan buttons; the price is
+          // in the line above them, not on a button.
+          await expect(a).toHaveText(/^(Ticketmaster|SeatPlan) ↗$/);
         }
+        // A price in the box is the price of that performance, so it's in the table too.
+        if (/from [£$]\d/.test(await box.textContent())) await expect(page.locator("#dates")).toContainText(/from [£$]\d/);
         const other = box.getByRole("link", { name: "Other dates ↓" });
         await other.click();
         await expect(page).toHaveURL(/#dates$/);
