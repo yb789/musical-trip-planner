@@ -273,6 +273,13 @@ test.describe("show page ticket button", () => {
         await expect(box, `${path}: no dated ticket links, so no ticket box`).toHaveCount(0);
         continue;
       }
+      // Every time in the table offers Ticketmaster, and SeatPlan where SeatPlan lists the show (27 Nov 2026).
+      const tmChips = page.locator('#dates a.chip.tm[href^="/go?"]'), spChips = page.locator('#dates a.chip.sp[href^="/go?"]');
+      expect(await tmChips.count(), `${path}: no Ticketmaster buttons in the dates table`).toBeGreaterThan(0);
+      if (await spChips.count()) {
+        const sp = new URL(new URL(await spChips.first().getAttribute("href"), page.url()).searchParams.get("u"));
+        expect(sp.pathname, `${path}: SeatPlan button is not a dated performance page`).toMatch(/-tickets\/tickets\/\d{1,2}-[a-z]{3}-\d{4}\/\d{1,2}-\d{2}(am|pm)\/$/);
+      }
       if (await box.count()) {
         // The box replaces the old button: never both.
         await expect(button, `${path}: the box and the old button are both shown`).toHaveCount(0);
