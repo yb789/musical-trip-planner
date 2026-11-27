@@ -1,4 +1,4 @@
-// GET /api/tm-link?city=london|broadway&name=<show>&date=YYYY-MM-DD&time=HH:MM
+// GET /api/tm-link?city=london|broadway&name=<show>&date=YYYY-MM-DD&time=HH:MM[&src=holiday]
 // Returns { url } — the Ticketmaster page for that exact performance, wrapped in the Impact affiliate
 // link — or { url: "" } when Ticketmaster doesn't sell it (the planner then shows no Ticketmaster button).
 // Uses the licensed Discovery API through lib/site-pages.js (same lookup as the show pages).
@@ -41,7 +41,9 @@ export default async function handler(req, res) {
   const p = pickPerformance(r.performances, date, time);
   let url = "";
   if (p) {
-    const tracked = goPath(p.url, `planner-${show.id}`); // /go?u=…&subId1=planner-<id> (lib/go.js adds Impact)
+    // subId names where the click came from: the planner (default) or a Christmas & New Year day page.
+    const src = q.src === "holiday" ? "holiday" : "planner";
+    const tracked = goPath(p.url, `${src}-${show.id}`); // /go?u=…&subId1=<src>-<id> (lib/go.js adds Impact)
     if (tracked !== p.url) url = tracked; // only Ticketmaster pages get a button
   }
   return send(200, { url }, "public, s-maxage=3600, stale-while-revalidate=86400");
