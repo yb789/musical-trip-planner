@@ -43,8 +43,9 @@ test.describe("show-page ticket box", () => {
     expect(r.box).toContain("Sat 28 Nov · 7:30 pm");
     expect(r.box).not.toContain("27 Nov");
     // The price sits above the buttons with its seller named; the buttons carry no price.
-    expect(r.box).toContain("from £29 on Ticketmaster");
-    expect(r.box).toContain("from £35 on Ticketmaster");
+    // "Tickets from £X" in big type above both buttons, with where the price was seen (27 Nov 2026).
+    expect(r.box).toContain('<span class="from">Tickets from £29<small>lowest price seen on Ticketmaster</small></span>');
+    expect(r.box).toContain('<span class="from">Tickets from £35<small>lowest price seen on Ticketmaster</small></span>');
     expect(r.box).toContain("ends about 5:15 pm");
     // Each slot: Ticketmaster and SeatPlan buttons of the same kind (27 Nov 2026, Yuval: "the same"),
     // both through /go, tagged top-<show>, each to that performance's page with that seller.

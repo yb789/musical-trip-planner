@@ -285,7 +285,10 @@ test.describe("show page ticket button", () => {
           await expect(a).toHaveText(/^(Ticketmaster|SeatPlan) ↗$/);
         }
         // A price in the box is the price of that performance, so it's in the table too.
-        if (/from [£$]\d/.test(await box.textContent())) await expect(page.locator("#dates")).toContainText(/from [£$]\d/);
+        if (/from [£$]\d/.test(await box.textContent())) {
+          await expect(box.locator(".from").first()).toHaveText(/^Tickets from [£$]\d+(\.\d\d)?/);
+          await expect(page.locator("#dates")).toContainText(/from [£$]\d/);
+        }
         const other = box.getByRole("link", { name: "Other dates ↓" });
         await other.click();
         await expect(page).toHaveURL(/#dates$/);
