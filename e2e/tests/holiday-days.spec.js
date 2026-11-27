@@ -51,13 +51,24 @@ test.describe("Christmas & New Year day pages", () => {
     expect(sp.map(u => u.searchParams.get("u"))).toEqual(["https://seatplan.com/london/wicked-tickets/tickets/26-dec-2026/2-30pm/", "https://seatplan.com/london/wicked-tickets/tickets/26-dec-2026/7-30pm/"]);
     expect(sp.map(u => u.searchParams.get("subId1"))).toEqual(["holiday-wicked", "holiday-wicked"]);
     // Ticketmaster: filled in by the page from /api/tm-link (src=holiday), hidden until then.
-    expect((r.boxing.match(/<a class="chip tm" hidden data-tm="[^"]+" data-time="\d\d:\d\d"/g) || []).length).toBe(4);
-    expect(r.boxing).toContain("/api/tm-link?city=london&src=holiday&date=2026-12-26");
+    expect((r.boxing.match(/<a class="chip tm" hidden data-tm="[^"]+" data-date="\d{4}-\d\d-\d\d" data-time="\d\d:\d\d"/g) || []).length).toBe(4);
+    expect(r.boxing).toContain("/api/tm-link?city=london&src=holiday&date='+a.getAttribute('data-date')");
+    expect((r.boxing.match(/data-date="2026-12-26"/g) || []).length).toBe(4);
     // The same show and time listed twice appears once.
     expect((section(r.eve, "matinees").match(/href="\/london\/wicked\/"/g) || []).length).toBe(1);
-    // Christmas Day with nothing listed says so plainly and is still a page Google may show.
+    // Christmas Day with nothing listed says so in one line, then shows the nearest days that have
+    // shows (Christmas Eve, Boxing Day) with their own dates on the ticket buttons (27 Nov 2026).
     expect(r.xmas).toContain("No West End shows are listed on Christmas Day 2026 (Friday 25 December 2026).");
     expect(r.xmas).not.toContain('content="noindex');
+    expect(r.xmas).toContain("There is theatre either side: Christmas Eve (Thursday 24 December): 1 show, 1 matinee; Boxing Day (Saturday 26 December): 3 shows, 2 matinees and 2 evening performances. Both are listed below with ticket links.");
+    expect(r.xmas).toContain("nothing on that day, so here&#39;s what&#39;s on Christmas Eve and Boxing Day instead");
+    expect(r.xmas).toMatch(/<h2 id="christmas-eve">Christmas Eve instead: 1 show<\/h2>[\s\S]*href="\/london\/christmas-eve\/">More about Christmas Eve →/);
+    expect(r.xmas).toMatch(/<h2 id="boxing-day">Boxing Day instead: 3 shows<\/h2>/);
+    const xsp = [...r.xmas.matchAll(/<a class="chip sp" href="([^"]+)"/g)].map(m => new URL(m[1].replace(/&amp;/g, "&"), "https://musicaltripplanner.com").searchParams.get("u"));
+    expect(xsp).toEqual(["https://seatplan.com/london/wicked-tickets/tickets/24-dec-2026/2-30pm/", "https://seatplan.com/london/wicked-tickets/tickets/26-dec-2026/2-30pm/", "https://seatplan.com/london/wicked-tickets/tickets/26-dec-2026/7-30pm/"]);
+    expect(r.xmas).toContain("Which West End shows are on Boxing Day 2026?");
+    // A day that has shows doesn't get the "instead" sections.
+    expect(r.boxing).not.toContain(" instead: ");
     // No Boxing Day page for New York; a day not listed yet is noindex and says so.
     expect(r.nyBoxing).toBeNull();
     expect(r.unlisted).toContain("aren't listed yet");
