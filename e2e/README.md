@@ -13,6 +13,7 @@ size, and Safari's engine at iPhone size), and fail if anything on the way break
 | `tests/helper.spec.js` | "Help me choose": four questions, shortlist, on to the planner |
 | `tests/matinee-plays.spec.js` | Matinee pages: plays get their own table and quick answer, the musical counts stay musicals only (code check, local copy only) |
 | `tests/show-search.spec.js` | "Find a show by name" on the opening screen and at the top of the site pages: both cities, short names, typing slips, plays and spectaculars, a name that is not in the guide, keyboard use, every show in the guide can be found, search counting |
+| `tests/show-ticket-box.spec.js` | The ticket box at the top of show pages: next matinee and next evening with price, started/cancelled performances skipped, every button through `/go` tagged `top-<show>`, the planner as the second step (code check, local copy only); on a deployed site, a box button reaches the seller |
 | `tests/show-titles.spec.js` | Show-page titles and descriptions: matinee, finish and running time when the running time is known (code check, local copy only) |
 
 Every test also fails on a script error, a Content-Security-Policy violation, or a server error
